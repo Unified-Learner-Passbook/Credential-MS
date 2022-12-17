@@ -27,12 +27,14 @@ export class AppService {
     private configService: ConfigService,
   ){}
 
-  async register(req: VCRequest): Promise<any> {
-    const vcJwt = await createVerifiableCredentialJwt(req, this.issuer);
+  async register(req: VCRequest, token): Promise<any> {
+    // const vcJwt = await createVerifiableCredentialJwt(req, this.issuer);
+    const vcJwt = "Response from MS: Signed String"
+    req.vc.proof = vcJwt;
     this.prisma.vC.create({
       data: {
         vcId: req.sub,
-        vc: vcJwt
+        vc: JSON.stringify(req),
       }
     })
     return vcJwt;
@@ -46,10 +48,10 @@ export class AppService {
     });
   }
 
-  getVC(vcId: string) {
-    return this.prisma.vC.findUnique({
+  getVCBySub(sub: string) {
+    return this.prisma.vC.findMany({
       where: {
-        vcId: vcId,
+        sub: sub,
       },
       select: {
         vc: true,
@@ -57,20 +59,37 @@ export class AppService {
     })
   }
 
-  updateStatus(req: VCUpdateRequest): any {
-    let vc = this.getVC(req.credentialId)
-    vc['credentialStatus'] = req.crdentialStatus;
+  getVCByIss(iss: string) {
+    return this.prisma.vC.findMany({
+      where: {
+        iss: iss,
+      },
+      select: {
+        vc: true,
+      }
+    })
+  }
+
+  updateStatus(req: VCUpdateRequest, token: string): any {
+    let vc = this.getVCBySub(req.sub)
+    vc['vc']['credentialStatus'] = req.crdentialStatus;
+    //TODO: get signed proof from MS from token
+    const proof = "Response: Signed String"
+    vc['vc']['proof'] = proof;
     this.prisma.vC.update({
       where: {
-        vcId: req.credentialId,
+        sub_iss: {
+          sub: req.sub,
+          iss: req.iss,
+        }
       },
       data: vc
     })
     return "Credential status successfully updated"
   }
   
-  async verify(req: string): Promise<any> {
-    const verifiedVC = await verifyCredential(req, this.resolver)
+  async verify(req: VCRequest): Promise<any> {
+    const verifiedVC = await verifyCredential(req.vc.proof.jws, this.resolver)
     return verifiedVC;
   }
 }

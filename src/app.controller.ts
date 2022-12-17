@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, Headers } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DiskHealthIndicator, HealthCheck, HealthCheckService, HttpHealthIndicator } from '@nestjs/terminus';
@@ -34,39 +34,48 @@ export class AppController {
   @ApiBody({ type: VCResponse })
   @Post('issue')
   @HttpCode(201)
-  register(req: VCRequest): any {
-    return this.appService.register(req);
+  register(req: VCRequest, @Headers('X-AUTHORIZATION') token: string): any {
+    return this.appService.register(req, token);
   }
 
-  @ApiOperation({ summary: 'Get VCs' })
-  @ApiResponse({ type: VCResponse, status: 200, description: 'Get list of VCs' })
+  @ApiOperation({ summary: 'Get All VCs' })
+  @ApiResponse({ type: VCResponse, status: 200, description: 'Get list of all VCs' })
   @Get()
   getVCs(): Promise<any> {
     return this.appService.getVCs();
   }
 
-  @ApiOperation({ summary: 'Get VC' })
-  @ApiResponse({ type: VCResponse, status: 200, description: 'Get VC details' })
-  @Get('/:vcId')
-  getVC(@Param('vcId') vcId: string): Promise<any> {
-    return this.appService.getVC(vcId);
+  @ApiOperation({ summary: 'Get VC by Subject' })
+  @ApiResponse({ type: VCResponse, status: 200, description: 'Get VC details by Subject' })
+  @Get('/:sub')
+  @HttpCode(200)
+  getVCBySub(@Param('sub') sub: string): Promise<any> {
+    return this.appService.getVCBySub(sub);
+  }
+
+  @ApiOperation({ summary: 'Get VC by Issuer' })
+  @ApiResponse({ type: VCResponse, status: 200, description: 'Get VC details by Issuer' })
+  @Get('/:iss')
+  @HttpCode(200)
+  getVCByIss(@Param('iss') iss: string): Promise<any> {
+    return this.appService.getVCByIss(iss);
   }
 
   @ApiOperation({ summary: 'Update VC Status' })
   @ApiResponse({ type: String, status: 200, description: 'Update VC' })
   @ApiBody({ type: VCUpdateRequest })
-  @Post('issue')
-  @HttpCode(201)
-  update(req: VCUpdateRequest): any {
-    return this.appService.updateStatus(req);
+  @Post('status')
+  @HttpCode(200)
+  update(req: VCUpdateRequest, @Headers('X-AUTHORIZATION') token: string): any {
+    return this.appService.updateStatus(req, token);
   }
 
-  @ApiOperation({ summary: 'Verify Presentation' })
+  @ApiOperation({ summary: 'Verify Credential' })
   @ApiResponse({ type: String, status: 200, description: 'Update VC' })
   @ApiBody({ type: VCUpdateRequest })
-  @Post('issue')
-  @HttpCode(201)
-  verify(req: string): any {
+  @Post('verify')
+  @HttpCode(200)
+  verify(req: VCRequest): any {
     return this.appService.verify(req);
   }
 }

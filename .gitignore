@@ -38,3 +38,4 @@ pgdata
 broker
 .env
 migrations/
+.history/

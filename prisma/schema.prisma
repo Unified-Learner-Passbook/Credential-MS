@@ -12,8 +12,10 @@ datasource db {
 
 model VC {
   id                          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  vcId                        String
+  sub                         String
+  iss                         String
   vc                          Json
   created_at                  DateTime @default(now())
   updated_at                  DateTime?
+  @@unique([sub, iss])
 }

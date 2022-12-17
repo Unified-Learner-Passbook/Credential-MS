@@ -17,6 +17,7 @@ export class VCRequest {
     credentialStatus?: CredentialStatus
     evidence?: any
     termsOfUse?: any
+    proof?: string
   }>
   nbf?: number
   aud?: string | string[]
@@ -57,13 +58,14 @@ export class VCResponse {
 
 export interface Proof {
     type:               string;
-    created:            Date;
-    proofPurpose:       string;
-    verificationMethod: string;
+    created?:            Date;
+    proofPurpose?:       string;
+    verificationMethod?: string;
     jws:                string;
 }
 
 export class VCUpdateRequest {
-    credentialId: string;
+    sub: string;
+    iss: string;
     crdentialStatus: any;
 }
