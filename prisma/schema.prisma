@@ -10,12 +10,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum VCStatus {
+  PENDING
+  ISSUED
+  REVOKED
+}
+
 model VC {
-  id                          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sub                         String
-  iss                         String
-  vc                          Json
-  created_at                  DateTime @default(now())
-  updated_at                  DateTime?
-  @@unique([sub, iss])
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type              String
+  subject           String
+  issuer            String
+  status            VCStatus  @default(PENDING)
+  credential_schema String
+  unsigned          Json
+  signed            Json?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime? @default(now())
+
+  @@unique([subject, issuer])
 }

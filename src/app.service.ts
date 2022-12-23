@@ -1,96 +1,164 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { VCRequest, VCUpdateRequest } from './app.interface';
+import { IssueRequest, VCRequest } from './app.interface';
 import { PrismaService } from './prisma.service';
-import jwt = require('jsonwebtoken');
-import fs = require('fs');
-import { join } from 'path';
-import { createVerifiableCredentialJwt, Issuer, verifyCredential } from 'did-jwt-vc';
-import { EthrDID } from 'ethr-did';
-import { Resolver } from 'did-resolver';
-import { getResolver } from 'ethr-did-resolver';
+import { VC } from '@prisma/client';
+import {
+  transformCredentialInput,
+  CredentialPayload,
+  W3CCredential,
+  Verifiable,
+  JwtCredentialPayload,
+} from 'did-jwt-vc';
+import { HttpService } from '@nestjs/axios';
+import { DIDDocument, VerificationMethod } from 'did-resolver';
+import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ION = require('@decentralized-identity/ion-tools');
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const QRCode = require('qrcode');
 
 @Injectable()
 export class AppService {
-  publicKeyUrl: "";
-  issuer = new EthrDID({
-    identifier: '0xf1232f840f3ad7d23fcdaa84d6c66dac24efb198',
-    privateKey: 'd8b595680851765f38ea5405129244ba3cbad84467d190859f4c8b20c1ff6c75'
-  }) as Issuer
-  providerConfig = {
-    rpcUrl: 'https://mainnet.infura.io/v3/<YOUR infura.io PROJECT ID>',
-    registry: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'
-  }
-  resolver = new Resolver(getResolver(this.providerConfig))
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-  ){}
+    private httpService: HttpService,
+  ) { }
 
-  async register(req: VCRequest, token): Promise<any> {
-    // const vcJwt = await createVerifiableCredentialJwt(req, this.issuer);
-    const vcJwt = "Response from MS: Signed String"
-    req.vc.proof = vcJwt;
-    this.prisma.vC.create({
+  async claim(vcReqestData: VCRequest): Promise<VC> {
+    //TODO: Veify the VCRequest
+    // Verify Issuer
+    // Verify Subject
+    // Verify Type
+    // Verify Credential Schema
+    // Verify Credential
+
+    const unsignedVC = await this.prisma.vC.create({
       data: {
-        vcId: req.sub,
-        vc: JSON.stringify(req),
-      }
-    })
-    return vcJwt;
+        subject: vcReqestData.subject,
+        type: vcReqestData.type,
+        issuer: vcReqestData.issuer,
+        unsigned: vcReqestData.credential,
+        credential_schema: vcReqestData.schema,
+      },
+    });
+    return unsignedVC;
   }
 
-  getVCs(): Promise<any> {
+  async signVC(credentialPlayload: JwtCredentialPayload, did: string) {
+    console.log(credentialPlayload);
+    did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    const signedVCResponse: AxiosResponse =
+      await this.httpService.axiosRef.post(`http://localhost:3332/utils/sign`, {
+        DID: did,
+        payload: JSON.stringify(credentialPlayload),
+      });
+    return signedVCResponse.data.signed as string;
+  }
+
+  async issue(vcReqestData: IssueRequest): Promise<VC> {
+    const credential = await this.prisma.vC.findUnique({
+      where: { id: vcReqestData.id },
+    });
+    const signedCredential: any = credential.unsigned;
+    // TODO: Sign the VC and udpate proof value
+    signedCredential.proof = {
+      proofValue: await this.signVC(
+        transformCredentialInput(credential.unsigned as CredentialPayload),
+        credential.issuer,
+      ),
+      type: 'Ed25519Signature2020',
+      created: new Date().toISOString(),
+      verificationMethod: credential.issuer,
+      proofPurpose: 'assertionMethod',
+    };
+
+    const signedVC = await this.prisma.vC.update({
+      data: {
+        signed: signedCredential,
+      },
+      where: { id: vcReqestData.id },
+    });
+    return signedVC;
+  }
+
+  getVCBySubject(sub: string) {
     return this.prisma.vC.findMany({
+      where: {
+        subject: sub,
+      },
       select: {
-        vc: true
-      }
+        signed: true,
+      },
     });
   }
 
-  getVCBySub(sub: string) {
+  getVCByIssuer(issuer: string) {
     return this.prisma.vC.findMany({
       where: {
-        sub: sub,
+        issuer: issuer,
       },
       select: {
-        vc: true,
-      }
-    })
+        signed: true,
+      },
+    });
   }
 
-  getVCByIss(iss: string) {
-    return this.prisma.vC.findMany({
-      where: {
-        iss: iss,
-      },
-      select: {
-        vc: true,
-      }
-    })
+  async verify(credential: Verifiable<W3CCredential>): Promise<boolean> {
+    // resolve DID
+    // const verificationMethod: VerificationMethod =
+    //   credential.proof.verificationMethod;
+    const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
+      `http://localhost:3332/did/resolve/${verificationMethod}`,
+    );
+    const did: DIDDocument = dIDResponse.data as DIDDocument;
+    try {
+      const verified = await ION.verifyJws({
+        jws: credential.proof.proofValue,
+        publicJwk: did.verificationMethod[0].publicKeyJwk,
+      });
+      console.debug(verified);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
-  updateStatus(req: VCUpdateRequest, token: string): any {
-    let vc = this.getVCBySub(req.sub)
-    vc['vc']['credentialStatus'] = req.crdentialStatus;
-    //TODO: get signed proof from MS from token
-    const proof = "Response: Signed String"
-    vc['vc']['proof'] = proof;
-    this.prisma.vC.update({
-      where: {
-        sub_iss: {
-          sub: req.sub,
-          iss: req.iss,
-        }
-      },
-      data: vc
-    })
-    return "Credential status successfully updated"
+  async renderAsQR(credentialId: string): Promise<any> {
+    const credential = await this.prisma.vC.findUnique({
+      where: { id: credentialId },
+    });
+
+    try {
+      const QRData = await QRCode.toDataURL(
+        (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
+      );
+      return QRData;
+    } catch (err) {
+      console.error(err);
+      return err;
+    }
   }
-  
-  async verify(req: VCRequest): Promise<any> {
-    const verifiedVC = await verifyCredential(req.vc.proof.jws, this.resolver)
-    return verifiedVC;
-  }
+
+  // updateStatus(req: VCUpdateRequest, token: string): any {
+  //   let vc = this.getVCBySub(req.sub)
+  //   vc['vc']['credentialStatus'] = req.crdentialStatus;
+  //   //TODO: get signed proof from MS from token
+  //   const proof = "Response: Signed String"
+  //   vc['vc']['proof'] = proof;
+  //   this.prisma.vC.update({
+  //     where: {
+  //       sub_iss: {
+  //         sub: req.sub,
+  //         iss: req.iss,
+  //       }
+  //     },
+  //     data: vc
+  //   })
+  //   return "Credential status successfully updated"
+  // }
 }
-
