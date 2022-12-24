@@ -4,25 +4,14 @@ import {
   HttpCode,
   Param,
   Post,
-  Headers,
   Body,
   Render,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import {
-  HealthCheck,
-  HealthCheckService,
-  HttpHealthIndicator,
-} from '@nestjs/terminus';
+
 import { Verifiable, W3CCredential } from 'did-jwt-vc';
-import { PrismaHealthIndicator } from 'prisma/prisma.health';
-import {
-  IssueRequest,
-  VCRequest,
-  VCResponse,
-  VCUpdateRequest,
-} from './app.interface';
+import { IssueRequest, VCRequest, VCResponse } from './app.interface';
 import { AppService } from './app.service';
 
 @Controller('credentials')
@@ -30,7 +19,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private configService: ConfigService,
-  ) { }
+  ) {}
 
   @ApiOperation({ summary: 'VC Claim' })
   @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })
