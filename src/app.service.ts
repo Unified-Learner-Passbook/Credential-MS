@@ -11,7 +11,7 @@ import {
   JwtCredentialPayload,
 } from 'did-jwt-vc';
 import { HttpService } from '@nestjs/axios';
-import { DIDDocument, VerificationMethod } from 'did-resolver';
+import { DIDDocument } from 'did-resolver';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -26,7 +26,7 @@ export class AppService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private httpService: HttpService,
-  ) { }
+  ) {}
 
   async claim(vcReqestData: VCRequest): Promise<VC> {
     //TODO: Veify the VCRequest

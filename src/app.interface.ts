@@ -1,4 +1,5 @@
-import { W3CCredential } from "did-jwt-vc";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { W3CCredential } from 'did-jwt-vc';
 
 export type Extensible<T> = T & { [x: string]: any };
 
@@ -20,10 +21,30 @@ export type Credential = Extensible<{
 }>;
 
 export class VCRequest {
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Issuer of the VC',
+  })
   issuer?: string;
+  @ApiProperty({
+    type: String,
+    description: 'Subject of the VC',
+  })
   subject: string;
+  @ApiProperty({
+    type: String,
+    description: 'Schema of the VC',
+  })
   schema: string;
+  @ApiProperty({
+    type: String,
+    description: 'Type of the VC',
+  })
   type: string;
+  @ApiProperty({
+    type: String,
+    description: 'Credential of the VC',
+  })
   credential: W3CCredential;
 }
 
@@ -53,12 +74,40 @@ export interface credentialOptions {
 }
 
 export class VCResponse {
+  @ApiProperty({
+    type: String,
+    description: 'Context of the VC',
+  })
   '@context': Array<string>;
+  @ApiProperty({
+    type: String,
+    description: 'ID of the VC',
+  })
   id: string;
+  @ApiProperty({
+    type: String,
+    description: 'Type of the VC',
+  })
   type: string[];
+  @ApiProperty({
+    type: String,
+    description: 'Issuer of the VC',
+  })
   issuer: string;
+  @ApiProperty({
+    type: String,
+    description: 'Date of issuance of the VC',
+  })
   issuanceDate: Date;
+  @ApiProperty({
+    type: String,
+    description: 'Subject of the VC',
+  })
   credentialSubject: any;
+  @ApiProperty({
+    type: String,
+    description: 'Proof of the VC',
+  })
   proof: Proof;
 }
 
