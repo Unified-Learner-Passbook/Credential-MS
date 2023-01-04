@@ -33,7 +33,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3333;
   await app.startAllMicroservices();
-  await app.listen(port);
+  await app.listen(`0.0.0.0:${port}`);
   Logger.log(`🚀 Application is running on: http://localhost:${port}/`);
 }
 bootstrap();
