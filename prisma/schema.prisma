@@ -30,3 +30,17 @@ model VC {
 
   @@unique([subject, issuer])
 }
+
+model VCV2 {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  type           String[]
+  issuer         String
+  issuanceDate   String
+  expirationDate String
+  subject        Json
+  status         VCStatus  @default(PENDING)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @default(now())
+
+  @@unique([subject, issuer])
+}
