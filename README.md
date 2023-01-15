@@ -76,3 +76,7 @@ $ npx yarn run test:cov
 ## License
 
 Nest is [MIT licensed](LICENSE).
+
+## Links
+
+-[W3C VC API](https://w3c-ccg.github.io/vc-api/)

@@ -33,7 +33,7 @@ export class AppController {
   @ApiOperation({ summary: 'Sign a claim' })
   @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })
   @ApiBody({ type: VCResponse })
-  @Post('issue')
+  @Post('issuecred')
   @HttpCode(201)
   issue(@Body() issueRequest: IssueRequest): any {
     return this.appService.issue(issueRequest);
@@ -87,7 +87,7 @@ export class AppController {
 
   @ApiOperation({ summary: 'Verify Credential' })
   @ApiResponse({ type: String, status: 200, description: 'Update VC' })
-  @Post('verify')
+  @Post('verifycred')
   @HttpCode(200)
   verify(@Body() credential: Verifiable<W3CCredential>): any {
     return this.appService.verify(credential);

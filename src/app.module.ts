@@ -4,10 +4,24 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
+// import { IssuingService } from './issuing/issuing.service';
+// import { IssuingModule } from './issuing/issuing.module';
+// import { VerifyingModule } from './verifying/verifying.module';
+import { CredentialsModule } from './credentials/credentials.module';
+import { PresentationsModule } from './presentations/presentations.module';
+import { ExchangesModule } from './exchanges/exchanges.module';
 
 @Module({
-  imports: [HttpModule, ConfigModule.forRoot({ isGlobal: true })],
+  imports: [
+    HttpModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    // IssuingModule,
+    // VerifyingModule,
+    CredentialsModule,
+    PresentationsModule,
+    ExchangesModule,
+  ],
   controllers: [AppController],
-  providers: [AppService, ConfigService, PrismaService],
+  providers: [AppService, ConfigService, PrismaService, /*IssuingService*/],
 })
 export class AppModule {}
