@@ -57,3 +57,10 @@ model Presentations {
   created_at           DateTime  @default(now())
   updated_at           DateTime? @default(now())
 }
+
+model Template {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  schema   String
+  template String
+  type     String
+}

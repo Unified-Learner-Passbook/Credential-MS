@@ -80,8 +80,11 @@ export class CredentialsService {
 
   async deleteCredential(id: string) {
     try {
-      const credential = await this.prisma.vC.delete({
+      const credential = await this.prisma.vC.update({
         where: { id: id },
+        data: {
+          status: 'REVOKED',
+        },
       });
       return credential;
     } catch (err) {
