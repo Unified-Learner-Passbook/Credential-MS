@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { CredentialsService } from './credentials.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
+import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
 import { IssueCredentialDTO } from './dto/issue-credential.dto';
 import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
@@ -12,6 +13,11 @@ export class CredentialsController {
   @Get()
   getCredentials() {
     return this.credentialsService.getCredentials();
+  }
+
+  @Post()
+  getCredentialsBySubject(@Body() getCreds: GetCredentialsBySubjectOrIssuer) {
+    return this.credentialsService.getCredentialsBySubjectOrIssuer(getCreds);
   }
 
   @Get(':id')
@@ -42,5 +48,10 @@ export class CredentialsController {
   @Post('derive')
   deriveCredential(@Body() deriveRequest: DeriveCredentialDTO) {
     return this.credentialsService.deriveCredential(deriveRequest);
+  }
+
+  @Post('render')
+  renderTemplate() {
+    return;
   }
 }

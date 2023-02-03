@@ -37,7 +37,8 @@ model VCV2 {
   issuer          String
   issuanceDate    String
   expirationDate  String
-  subject         Json
+  // subject         Json (as per the VC doc this is JSON)
+  subject         String
   status          VCStatus       @default(PENDING)
   created_at      DateTime       @default(now())
   updated_at      DateTime?      @default(now())

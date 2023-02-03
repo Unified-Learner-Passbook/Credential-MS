@@ -1,11 +1,20 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
+import { Verifiable, W3CCredential } from 'did-jwt-vc';
+import { DIDDocument } from 'did-resolver';
 import { PrismaService } from 'src/prisma.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
+import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
 import { IssueCredentialDTO } from './dto/issue-credential.dto';
 import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const QRCode = require('qrcode');
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ION = require('@decentralized-identity/ion-tools');
 @Injectable()
 export class CredentialsService {
   constructor(
@@ -37,21 +46,21 @@ export class CredentialsService {
     // resolve DID
     // const verificationMethod: VerificationMethod =
     //   credential.proof.verificationMethod;
-    /*const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
     const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
       `http://localhost:3332/did/resolve/${verificationMethod}`,
     );
     const did: DIDDocument = dIDResponse.data as DIDDocument;
     try {
       const verified = await ION.verifyJws({
-        jws: credential.proof.proofValue,
+        jws: verifyRequest.verifiableCredential.proof.proofValue,
         publicJwk: did.verificationMethod[0].publicKeyJwk,
       });
       console.debug(verified);
       return true;
     } catch (e) {
       return false;
-    }*/
+    }
   }
 
   async issueCredential(issueRequest: IssueCredentialDTO) {
@@ -92,7 +101,40 @@ export class CredentialsService {
     }
   }
 
+  async getCredentialsBySubjectOrIssuer(
+    getCreds: GetCredentialsBySubjectOrIssuer,
+  ) {
+    try {
+      const credentials = await this.prisma.vC.findMany({
+        where: {
+          subject: getCreds.subject,
+          issuer: getCreds.issuer,
+        },
+      });
+      return credentials;
+    } catch (err) {
+      throw new InternalServerErrorException(err);
+    }
+  }
+
   async deriveCredential(deriveRequest: DeriveCredentialDTO) {
     return;
+  }
+
+  // UTILITY FUNCTIONS
+  async renderAsQR(credentialId: string): Promise<any> {
+    const credential = await this.prisma.vC.findUnique({
+      where: { id: credentialId },
+    });
+
+    try {
+      const QRData = await QRCode.toDataURL(
+        (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
+      );
+      return QRData;
+    } catch (err) {
+      console.error(err);
+      return err;
+    }
   }
 }
