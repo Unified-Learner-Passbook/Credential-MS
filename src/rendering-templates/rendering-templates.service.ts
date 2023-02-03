@@ -1,4 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Template } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import { AddTemplateDTO } from './dto/addTemplate.dto';
 
@@ -6,7 +7,7 @@ import { AddTemplateDTO } from './dto/addTemplate.dto';
 export class RenderingTemplatesService {
   constructor(private prisma: PrismaService) {}
 
-  async getTemplateBySchemaID(schemaID: string) {
+  async getTemplateBySchemaID(schemaID: string): Promise<Template[]> {
     try {
       return await this.prisma.template.findMany({
         where: { schema: schemaID },
@@ -16,7 +17,7 @@ export class RenderingTemplatesService {
     }
   }
 
-  async getTemplateById(id: string) {
+  async getTemplateById(id: string): Promise<Template> {
     try {
       return await this.prisma.template.findUnique({
         where: { id: id },
@@ -26,7 +27,7 @@ export class RenderingTemplatesService {
     }
   }
 
-  async addTemplate(addTemplateDto: AddTemplateDTO) {
+  async addTemplate(addTemplateDto: AddTemplateDTO): Promise<Template> {
     try {
       return await this.prisma.template.create({
         data: {
@@ -40,7 +41,10 @@ export class RenderingTemplatesService {
     }
   }
 
-  async updateTemplate(id: string, updateTemplateDto: AddTemplateDTO) {
+  async updateTemplate(
+    id: string,
+    updateTemplateDto: AddTemplateDTO,
+  ): Promise<Template> {
     try {
       return await this.prisma.template.update({
         where: { id: id },
