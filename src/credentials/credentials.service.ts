@@ -7,8 +7,10 @@ import { PrismaService } from 'src/prisma.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
 import { IssueCredentialDTO } from './dto/issue-credential.dto';
+import { RenderTemplateDTO } from './dto/renderTemplate.dto';
 import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
+import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
@@ -114,6 +116,30 @@ export class CredentialsService {
       return credentials;
     } catch (err) {
       throw new InternalServerErrorException(err);
+    }
+  }
+
+  async renderCredentials(renderingRequest: RenderTemplateDTO) {
+    const output = renderingRequest.output;
+    const credentail = renderingRequest.credentials;
+    const schema = renderingRequest.schema;
+    const template = renderingRequest.template;
+
+    switch (output) {
+      case RENDER_OUTPUT.QR:
+        // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
+        break;
+      case RENDER_OUTPUT.STRING:
+        break;
+      case RENDER_OUTPUT.HTML:
+
+        break;
+      case RENDER_OUTPUT.QR_LINK:
+        break;
+      case RENDER_OUTPUT.STRING:
+        break;
+      case RENDER_OUTPUT.JSON:
+        break;
     }
   }
 

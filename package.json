@@ -23,7 +23,7 @@
   "dependencies": {
     "@decentralized-identity/ion-tools": "^0.1.1",
     "@fastify/static": "^6.6.0",
-    "@fastify/view": "^7.3.0",
+    "@fastify/view": "^7.4.1",
     "@nestjs/axios": "^0.1.2",
     "@nestjs/common": "^8.0.0",
     "@nestjs/config": "^2.2.0",
