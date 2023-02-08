@@ -39,6 +39,7 @@ model VCV2 {
   expirationDate  String
   // subject         Json (as per the VC doc this is JSON)
   subject         String
+  proof           Json?
   status          VCStatus       @default(PENDING)
   created_at      DateTime       @default(now())
   updated_at      DateTime?      @default(now())

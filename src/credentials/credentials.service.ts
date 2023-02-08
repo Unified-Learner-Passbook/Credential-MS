@@ -1,8 +1,17 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
-import { Verifiable, W3CCredential } from 'did-jwt-vc';
+import { VCV2 } from '@prisma/client';
+import { verify } from 'crypto';
+import {
+  JwtCredentialPayload,
+  CredentialPayload,
+  transformCredentialInput,
+  Verifiable,
+  W3CCredential,
+} from 'did-jwt-vc';
 import { DIDDocument } from 'did-resolver';
+import { lastValueFrom, map } from 'rxjs';
 import { PrismaService } from 'src/prisma.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
@@ -48,40 +57,74 @@ export class CredentialsService {
     // resolve DID
     // const verificationMethod: VerificationMethod =
     //   credential.proof.verificationMethod;
-    const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    // const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    const verificationMethod = verifyRequest.verifiableCredential.issuer;
     const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
       `http://localhost:3332/did/resolve/${verificationMethod}`,
     );
+
     const did: DIDDocument = dIDResponse.data as DIDDocument;
+    console.log('did in verify: ', verify);
+    console.log(
+      'verifyRequest.verifiableCredential:',
+      verifyRequest.verifiableCredential,
+    );
+    // console.log(
+    //   'verifyRequest.verifiableCredential?.proof?.proofValue: ',
+    //   verifyRequest.verifiableCredential?.proof?.proofValue,
+    // );
     try {
       const verified = await ION.verifyJws({
-        jws: verifyRequest.verifiableCredential.proof.proofValue,
+        jws: verifyRequest.verifiableCredential?.proof?.proofValue,
         publicJwk: did.verificationMethod[0].publicKeyJwk,
       });
       console.debug(verified);
       return true;
     } catch (e) {
+      console.error(e);
       return false;
     }
+  }
+
+  async signVC(credentialPlayload: JwtCredentialPayload, did: string) {
+    console.log('credentialPlayload: ', credentialPlayload);
+    console.log('did: ', did);
+    // did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    const signedVCResponse: AxiosResponse =
+      await this.httpService.axiosRef.post(`http://localhost:3332/utils/sign`, {
+        DID: did,
+        payload: JSON.stringify(credentialPlayload),
+      });
+    return signedVCResponse.data.signed as string;
   }
 
   async issueCredential(issueRequest: IssueCredentialDTO) {
     try {
       const credInReq = issueRequest.credential;
-      await this.prisma.vCV2.create({
+      credInReq.proof = {
+        proofValue: await this.signVC(
+          transformCredentialInput(credInReq as CredentialPayload),
+          credInReq.issuer as string,
+        ),
+        type: 'Ed25519Signature2020',
+        created: new Date().toISOString(),
+        verificationMethod: credInReq.issuer,
+        proofPurpose: 'assertionMethod',
+      };
+      console.log('onto creation');
+      return await this.prisma.vCV2.create({
         data: {
           type: credInReq.type,
           issuer: credInReq.issuer as string,
           issuanceDate: credInReq.issuanceDate,
           expirationDate: credInReq.expirationDate,
           subject: JSON.stringify(credInReq.credentialSubject),
+          proof: credInReq.proof as any,
         },
       });
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
-
-    return;
   }
 
   async updateCredential(updateRequest: UpdateStatusDTO) {
@@ -132,7 +175,6 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.HTML:
-
         break;
       case RENDER_OUTPUT.QR_LINK:
         break;
