@@ -10,7 +10,6 @@ import { PrismaService } from './prisma.service';
 import { CredentialsModule } from './credentials/credentials.module';
 import { PresentationsModule } from './presentations/presentations.module';
 import { ExchangesModule } from './exchanges/exchanges.module';
-import { RenderingTemplatesModule } from './rendering-templates/rendering-templates.module';
 
 @Module({
   imports: [
@@ -21,7 +20,6 @@ import { RenderingTemplatesModule } from './rendering-templates/rendering-templa
     CredentialsModule,
     PresentationsModule,
     ExchangesModule,
-    RenderingTemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService, PrismaService, /*IssuingService*/],
