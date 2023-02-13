@@ -33,12 +33,16 @@ model VC {
 
 model VCV2 {
   id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  seqid           Int            @unique
   type            String[]
   issuer          String
   issuanceDate    String
   expirationDate  String
   // subject         Json (as per the VC doc this is JSON)
+  credential_schema String
   subject         String
+  unsigned          Json?
+  signed            Json?
   proof           Json?
   status          VCStatus       @default(PENDING)
   created_at      DateTime       @default(now())
@@ -47,6 +51,12 @@ model VCV2 {
   presentationsId String?        @db.ObjectId
 
   @@unique([subject, issuer])
+}
+
+model Counter {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  type_of_entity       String    @default("Credential")
+  for_next_credential  Int       @default(0)
 }
 
 model Presentations {
@@ -58,11 +68,4 @@ model Presentations {
   status               VCStatus  @default(PENDING)
   created_at           DateTime  @default(now())
   updated_at           DateTime? @default(now())
-}
-
-model Template {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  schema   String
-  template String
-  type     String
 }

@@ -101,6 +101,24 @@ export class CredentialsService {
   async issueCredential(issueRequest: IssueCredentialDTO) {
     try {
       const credInReq = issueRequest.credential;
+      /*
+      //Code block for unsigned credential
+
+      return await this.prisma.vCV2.create({ //use update incase the above codeblock is uncommented 
+        data: {
+          type: credInReq.type,
+          issuer: credInReq.issuer as string,
+          issuanceDate: credInReq.issuanceDate,
+          expirationDate: credInReq.expirationDate,
+          subject: JSON.stringify(credInReq.credentialSubject),
+          //proof: credInReq.proof as any,
+          credential_schema: JSON.stringify(issueRequest.credentialSchema), //because they can't refer to the schema db from here through an ID
+          unsigned: credInReq as object,
+        },
+
+      */
+
+
       credInReq.proof = {
         proofValue: await this.signVC(
           transformCredentialInput(credInReq as CredentialPayload),
@@ -111,15 +129,39 @@ export class CredentialsService {
         verificationMethod: credInReq.issuer,
         proofPurpose: 'assertionMethod',
       };
-      console.log('onto creation');
-      return await this.prisma.vCV2.create({
+      //console.log('onto creation');
+
+      //SEQUENTIAL ID LOGIC
+      //first credential entry if database is empty
+      if(await this.prisma.counter.findFirst({
+        where: {type_of_entity: "Credential"}
+      }) == null){
+        await this.prisma.counter.create({
+          data:{}
+        });
+      }
+      const seqID = await this.prisma.counter.findFirst({
+        where: {type_of_entity: "Credential"}
+      })
+      console
+      await this.prisma.counter.update({
+        where:{id:seqID.id},
+        data:{for_next_credential:seqID.for_next_credential+1}
+    })
+
+
+
+      return await this.prisma.vCV2.create({ //use update incase the above codeblock is uncommented 
         data: {
+          seqid: seqID.for_next_credential,
           type: credInReq.type,
           issuer: credInReq.issuer as string,
           issuanceDate: credInReq.issuanceDate,
           expirationDate: credInReq.expirationDate,
           subject: JSON.stringify(credInReq.credentialSubject),
           proof: credInReq.proof as any,
+          credential_schema: JSON.stringify(issueRequest.credentialSchema), //because they can't refer to the schema db from here through an ID
+          signed: credInReq as object,
         },
       });
     } catch (err) {
