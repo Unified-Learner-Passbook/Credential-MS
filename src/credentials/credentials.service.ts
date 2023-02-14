@@ -35,7 +35,7 @@ export class CredentialsService {
 
   async getCredentials() {
     try {
-      const credentials = await this.prisma.vC.findMany();
+      const credentials = await this.prisma.vCV2.findMany();
       return credentials;
     } catch (err) {
       throw new InternalServerErrorException(err);
@@ -143,15 +143,8 @@ export class CredentialsService {
       const seqID = await this.prisma.counter.findFirst({
         where: {type_of_entity: "Credential"}
       })
-      console
-      await this.prisma.counter.update({
-        where:{id:seqID.id},
-        data:{for_next_credential:seqID.for_next_credential+1}
-    })
 
-
-
-      return await this.prisma.vCV2.create({ //use update incase the above codeblock is uncommented 
+      const newCred =  await this.prisma.vCV2.create({ //use update incase the above codeblock is uncommented 
         data: {
           seqid: seqID.for_next_credential,
           type: credInReq.type,
@@ -164,6 +157,12 @@ export class CredentialsService {
           signed: credInReq as object,
         },
       });
+      //update counter only when credential has been created successfully
+      await this.prisma.counter.update({
+        where:{id:seqID.id},
+        data:{for_next_credential:seqID.for_next_credential+1}
+      })
+      return newCred;
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
@@ -192,7 +191,7 @@ export class CredentialsService {
     getCreds: GetCredentialsBySubjectOrIssuer,
   ) {
     try {
-      const credentials = await this.prisma.vC.findMany({
+      const credentials = await this.prisma.vCV2.findMany({
         where: {
           subject: getCreds.subject,
           issuer: getCreds.issuer,
