@@ -52,7 +52,7 @@ export class AppService {
     console.log(credentialPlayload);
     did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
     const signedVCResponse: AxiosResponse =
-      await this.httpService.axiosRef.post(`http://localhost:3332/utils/sign`, {
+      await this.httpService.axiosRef.post(`http://64.227.185.154:3000/utils/sign`, {
         DID: did,
         payload: JSON.stringify(credentialPlayload),
       });
@@ -113,7 +113,7 @@ export class AppService {
     //   credential.proof.verificationMethod;
     const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
     const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
-      `http://localhost:3332/did/resolve/${verificationMethod}`,
+      `http://64.227.185.154:3000/did/resolve/${verificationMethod}`,
     );
     const did: DIDDocument = dIDResponse.data as DIDDocument;
     try {

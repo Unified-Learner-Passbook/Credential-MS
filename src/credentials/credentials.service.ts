@@ -44,7 +44,7 @@ export class CredentialsService {
 
   async getCredentialById(id: string) {
     try {
-      const credential = await this.prisma.vC.findUnique({
+      const credential = await this.prisma.vC.findFirst({
         where: { id: id },
       });
       return credential;
@@ -60,7 +60,7 @@ export class CredentialsService {
     // const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
     const verificationMethod = verifyRequest.verifiableCredential.issuer;
     const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
-      `http://localhost:3332/did/resolve/${verificationMethod}`,
+      `http://64.227.185.154:3000/did/resolve/${verificationMethod}`,
     );
 
     const did: DIDDocument = dIDResponse.data as DIDDocument;
@@ -91,7 +91,7 @@ export class CredentialsService {
     console.log('did: ', did);
     // did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
     const signedVCResponse: AxiosResponse =
-      await this.httpService.axiosRef.post(`http://localhost:3332/utils/sign`, {
+      await this.httpService.axiosRef.post(`http://64.227.185.154:3000/utils/sign`, {
         DID: did,
         payload: JSON.stringify(credentialPlayload),
       });
@@ -133,18 +133,18 @@ export class CredentialsService {
 
       //SEQUENTIAL ID LOGIC
       //first credential entry if database is empty
-      if(await this.prisma.counter.findFirst({
-        where: {type_of_entity: "Credential"}
-      }) == null){
+      if (await this.prisma.counter.findFirst({
+        where: { type_of_entity: "Credential" }
+      }) == null) {
         await this.prisma.counter.create({
-          data:{}
+          data: {}
         });
       }
       const seqID = await this.prisma.counter.findFirst({
-        where: {type_of_entity: "Credential"}
+        where: { type_of_entity: "Credential" }
       })
 
-      const newCred =  await this.prisma.vCV2.create({ //use update incase the above codeblock is uncommented 
+      const newCred = await this.prisma.vCV2.create({ //use update incase the above codeblock is uncommented 
         data: {
           seqid: seqID.for_next_credential,
           type: credInReq.type,
@@ -159,8 +159,8 @@ export class CredentialsService {
       });
       //update counter only when credential has been created successfully
       await this.prisma.counter.update({
-        where:{id:seqID.id},
-        data:{for_next_credential:seqID.for_next_credential+1}
+        where: { id: seqID.id },
+        data: { for_next_credential: seqID.for_next_credential + 1 }
       })
       return newCred;
     } catch (err) {
@@ -191,9 +191,11 @@ export class CredentialsService {
     getCreds: GetCredentialsBySubjectOrIssuer,
   ) {
     try {
+      console.log('subject: ', getCreds.subject);
+      console.log('issuer: ', getCreds.issuer);
       const credentials = await this.prisma.vCV2.findMany({
         where: {
-          subject: getCreds.subject,
+          subject: JSON.stringify(getCreds.subject),
           issuer: getCreds.issuer,
         },
       });

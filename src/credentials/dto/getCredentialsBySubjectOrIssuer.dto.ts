@@ -1,4 +1,4 @@
 export class GetCredentialsBySubjectOrIssuer {
-  subject: string; //DID
+  subject: any; //DID
   issuer: string; //DID
 }

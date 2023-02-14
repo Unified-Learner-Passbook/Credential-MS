@@ -21,8 +21,9 @@ export class CredentialsController {
   }
 
   @Get(':id')
-  getCredentialById(@Param() id: string) {
-    return this.credentialsService.getCredentialById(id);
+  getCredentialById(@Param() id: { id: string }) {
+    console.log('id in getByIdController: ', id);
+    return this.credentialsService.getCredentialById(id?.id);
   }
 
   @Post('issue')
