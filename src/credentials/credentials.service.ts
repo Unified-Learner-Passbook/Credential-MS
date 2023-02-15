@@ -58,9 +58,15 @@ export class CredentialsService {
     // const verificationMethod: VerificationMethod =
     //   credential.proof.verificationMethod;
     // const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    console.log(
+      'process.env.IDENTIY_BASE_URL: ',
+      process.env.IDENTITY_BASE_URL,
+    );
     const verificationMethod = verifyRequest.verifiableCredential.issuer;
+    const verificationURL = `${process.env.IDENTITY_BASE_URL}/did/resolve/${verificationMethod}`;
+    console.log('verificationURL: ', verificationURL);
     const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
-      `${process.env.IDENTIY_BASE_URL}/did/resolve/${verificationMethod}`,
+      verificationURL,
     );
 
     const did: DIDDocument = dIDResponse.data as DIDDocument;
