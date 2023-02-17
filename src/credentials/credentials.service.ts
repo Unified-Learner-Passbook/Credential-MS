@@ -163,6 +163,7 @@ export class CredentialsService {
           issuanceDate: credInReq.issuanceDate,
           expirationDate: credInReq.expirationDate,
           subject: JSON.stringify(credInReq.credentialSubject),
+          subjectId: (credInReq.credentialSubject as any).id,
           proof: credInReq.proof as any,
           credential_schema: JSON.stringify(issueRequest.credentialSchema), //because they can't refer to the schema db from here through an ID
           signed: credInReq as object,
@@ -204,10 +205,12 @@ export class CredentialsService {
     try {
       console.log('subject: ', getCreds.subject);
       console.log('issuer: ', getCreds.issuer);
+      console.log('subjectId: ', getCreds.subjectId);
       const credentials = await this.prisma.vCV2.findMany({
         where: {
           subject: JSON.stringify(getCreds.subject),
           issuer: getCreds.issuer,
+          subjectId: getCreds.subjectId,
         },
       });
       return credentials;

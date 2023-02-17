@@ -1,4 +1,5 @@
 export class GetCredentialsBySubjectOrIssuer {
-  subject: any; //DID
-  issuer: string; //DID
+  subject?: any; //JSON
+  issuer?: string; //DID
+  subjectId?: string; //DID of student
 }
