@@ -222,8 +222,8 @@ export class CredentialsService {
 
   async renderCredential(renderingRequest: RenderTemplateDTO){
     const output = renderingRequest.output;
-    const credential = renderingRequest.credential;
     const rendering_template = renderingRequest.template;
+    const credential = renderingRequest.credential
     const subject = JSON.parse(credential.subject)
     delete subject.id
 
