@@ -20,6 +20,7 @@ import { RenderTemplateDTO } from './dto/renderTemplate.dto';
 import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
+import { compile, template } from 'handlebars';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
@@ -139,7 +140,7 @@ export class CredentialsService {
       };
       //console.log('onto creation');
 
-      //SEQUENTIAL ID LOGIC
+      //SEQUENTIAL ID LOGIC 
       //first credential entry if database is empty
       if (
         (await this.prisma.counter.findFirst({
@@ -219,11 +220,15 @@ export class CredentialsService {
     }
   }
 
-  async renderCredentials(renderingRequest: RenderTemplateDTO) {
+  async renderCredential(renderingRequest: RenderTemplateDTO){
     const output = renderingRequest.output;
-    const credentail = renderingRequest.credentials;
-    const schema = renderingRequest.schema;
-    const template = renderingRequest.template;
+    const credential = renderingRequest.credential;
+    const rendering_template = renderingRequest.template;
+    const subject = JSON.parse(credential.subject)
+    delete subject.id
+
+
+
 
     switch (output) {
       case RENDER_OUTPUT.QR:
@@ -232,15 +237,40 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.HTML:
-        break;
+        let template = compile(rendering_template)
+        const data = template(subject)
+        return data;
       case RENDER_OUTPUT.QR_LINK:
         break;
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.JSON:
         break;
-    }
-  }
+    
+  }}
+
+  // async renderCredentials(renderingRequest: RenderTemplateDTO) {
+  //   const output = renderingRequest.output;
+  //   const credentail = renderingRequest.credentials;
+  //   const schema = renderingRequest.schema;
+  //   const template = renderingRequest.template;
+
+  //   switch (output) {
+  //     case RENDER_OUTPUT.QR:
+  //       // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
+  //       break;
+  //     case RENDER_OUTPUT.STRING:
+  //       break;
+  //     case RENDER_OUTPUT.HTML:
+  //       break;
+  //     case RENDER_OUTPUT.QR_LINK:
+  //       break;
+  //     case RENDER_OUTPUT.STRING:
+  //       break;
+  //     case RENDER_OUTPUT.JSON:
+  //       break;
+  //   }
+  // }
 
   async deriveCredential(deriveRequest: DeriveCredentialDTO) {
     return;

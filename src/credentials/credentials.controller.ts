@@ -3,6 +3,7 @@ import { CredentialsService } from './credentials.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
 import { IssueCredentialDTO } from './dto/issue-credential.dto';
+import { RenderTemplateDTO } from './dto/renderTemplate.dto';
 import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 
@@ -52,7 +53,7 @@ export class CredentialsController {
   }
 
   @Post('render')
-  renderTemplate() {
-    return;
+  renderTemplate(@Body() renderRequest: RenderTemplateDTO) {
+    return this.credentialsService.renderCredential(renderRequest);
   }
 }
