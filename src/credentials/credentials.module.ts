@@ -3,7 +3,6 @@ import { CredentialsService } from './credentials.service';
 import { CredentialsController } from './credentials.controller';
 import { HttpModule } from '@nestjs/axios';
 import { PrismaService } from 'src/prisma.service';
-import { PDFService } from './pdf.service';
 
 @Module({
   imports: [HttpModule],

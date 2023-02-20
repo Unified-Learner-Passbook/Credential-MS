@@ -21,7 +21,6 @@ import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { compile, template } from 'handlebars';
-import { PDFService } from './pdf.service';
 import {join} from 'path';
 import puppeteer from 'puppeteer';
 
