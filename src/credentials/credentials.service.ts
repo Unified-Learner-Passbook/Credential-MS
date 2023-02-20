@@ -282,6 +282,7 @@ export class CredentialsService {
     const page = await browser.newPage()
     console.log(data);
     await page.setContent(data, {waitUntil: 'domcontentloaded'});
+    lkafhnlqaiefh
   
     await page.emulateMediaType('screen');
   
