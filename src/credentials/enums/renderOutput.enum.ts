@@ -5,4 +5,5 @@ export enum RENDER_OUTPUT {
   STRING = 'STRING',
   JSON = 'JSON',
   SHORTENED_URL = 'SHORTENED_URL',
+  PDF = 'PDF',
 }

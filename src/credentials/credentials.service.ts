@@ -21,6 +21,9 @@ import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { compile, template } from 'handlebars';
+import { PDFService } from './pdf.service';
+import {join} from 'path';
+import puppeteer from 'puppeteer';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
@@ -220,11 +223,17 @@ export class CredentialsService {
     }
   }
 
+  
+
   async renderCredential(renderingRequest: RenderTemplateDTO){
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
     const credential = renderingRequest.credential
     const subject = JSON.parse(credential.subject)
+    console.log(subject)
+    let template = compile(rendering_template)
+    const data = template(subject)
+
     delete subject.id
     switch (output) {
       case RENDER_OUTPUT.QR:
@@ -232,12 +241,15 @@ export class CredentialsService {
         break;
       case RENDER_OUTPUT.STRING:
         break;
-      case RENDER_OUTPUT.HTML:
-        let template = compile(rendering_template)
-        const data = template(subject)
-        return data;
-      case RENDER_OUTPUT.QR_LINK:
+      case RENDER_OUTPUT.PDF:
+        //console.log(data)
+        this.saveHTMLToPDF(data, join(process.cwd(), '/src/credentials/buffer/render-'+credential.id+'.pdf'));
         break;
+
+      case RENDER_OUTPUT.QR_LINK:
+        return data;
+        break;
+      case RENDER_OUTPUT.HTML:
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.JSON:
@@ -265,4 +277,24 @@ export class CredentialsService {
       return err;
     }
   }
+
+  async saveHTMLToPDF (data : string, path: string){
+    const browser = await puppeteer.launch()
+    const page = await browser.newPage()
+    console.log(data);
+    await page.setContent(data, {waitUntil: 'domcontentloaded'});
+  
+    await page.emulateMediaType('screen');
+  
+    const pdf = await page.pdf({
+        path : path,
+        margin: {top: '10px', right: '10px', left: '10px', bottom: '10px'},
+        printBackground: true,
+        format: 'A1',
+        //preferCSSPageSize: false,
+    })
+    await browser.close();
+  }
 }
+
+
