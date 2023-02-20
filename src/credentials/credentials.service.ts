@@ -226,10 +226,6 @@ export class CredentialsService {
     const credential = renderingRequest.credential
     const subject = JSON.parse(credential.subject)
     delete subject.id
-
-
-
-
     switch (output) {
       case RENDER_OUTPUT.QR:
         // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
@@ -248,29 +244,6 @@ export class CredentialsService {
         break;
     
   }}
-
-  // async renderCredentials(renderingRequest: RenderTemplateDTO) {
-  //   const output = renderingRequest.output;
-  //   const credentail = renderingRequest.credentials;
-  //   const schema = renderingRequest.schema;
-  //   const template = renderingRequest.template;
-
-  //   switch (output) {
-  //     case RENDER_OUTPUT.QR:
-  //       // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
-  //       break;
-  //     case RENDER_OUTPUT.STRING:
-  //       break;
-  //     case RENDER_OUTPUT.HTML:
-  //       break;
-  //     case RENDER_OUTPUT.QR_LINK:
-  //       break;
-  //     case RENDER_OUTPUT.STRING:
-  //       break;
-  //     case RENDER_OUTPUT.JSON:
-  //       break;
-  //   }
-  // }
 
   async deriveCredential(deriveRequest: DeriveCredentialDTO) {
     return;
