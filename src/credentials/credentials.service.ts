@@ -21,7 +21,7 @@ import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { compile, template } from 'handlebars';
-import {join} from 'path';
+import { join } from 'path';
 import puppeteer from 'puppeteer';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -142,7 +142,7 @@ export class CredentialsService {
       };
       //console.log('onto creation');
 
-      //SEQUENTIAL ID LOGIC 
+      //SEQUENTIAL ID LOGIC
       //first credential entry if database is empty
       if (
         (await this.prisma.counter.findFirst({
@@ -222,18 +222,16 @@ export class CredentialsService {
     }
   }
 
-  
-
-  async renderCredential(renderingRequest: RenderTemplateDTO){
+  renderCredential(renderingRequest: RenderTemplateDTO) {
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
-    const credential = renderingRequest.credential
-    const subject = JSON.parse(credential.subject)
-    console.log(subject)
-    let template = compile(rendering_template)
-    const data = template(subject)
+    const credential = renderingRequest.credential;
+    const subject = JSON.parse(credential.subject);
+    console.log(subject);
+    const template = compile(rendering_template);
+    const data = template(subject);
 
-    delete subject.id
+    delete subject.id;
     switch (output) {
       case RENDER_OUTPUT.QR:
         // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
@@ -242,7 +240,15 @@ export class CredentialsService {
         break;
       case RENDER_OUTPUT.PDF:
         //console.log(data)
-        this.saveHTMLToPDF(data, join(process.cwd(), '/src/credentials/buffer/render-'+credential.id+'.pdf'));
+        this.saveHTMLToPDF(
+          data,
+          join(
+            process.cwd(),
+            '/src/credentials/buffer/render-' + credential.id + '.pdf',
+          ),
+        );
+
+        return '/src/credentials/buffer/render-' + credential.id + '.pdf';
         break;
 
       case RENDER_OUTPUT.QR_LINK:
@@ -253,8 +259,8 @@ export class CredentialsService {
         break;
       case RENDER_OUTPUT.JSON:
         break;
-    
-  }}
+    }
+  }
 
   async deriveCredential(deriveRequest: DeriveCredentialDTO) {
     return;
@@ -277,23 +283,23 @@ export class CredentialsService {
     }
   }
 
-  async saveHTMLToPDF (data : string, path: string){
-    const browser = await puppeteer.launch()
-    const page = await browser.newPage()
+  async saveHTMLToPDF(data: string, path: string) {
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+    const page = await browser.newPage();
     console.log(data);
-    await page.setContent(data, {waitUntil: 'domcontentloaded'});
-  
+    await page.setContent(data, { waitUntil: 'domcontentloaded' });
+
     await page.emulateMediaType('screen');
-  
+
     const pdf = await page.pdf({
-        path : path,
-        margin: {top: '10px', right: '10px', left: '10px', bottom: '10px'},
-        printBackground: true,
-        format: 'A1',
-        //preferCSSPageSize: false,
-    })
+      path: path,
+      margin: { top: '10px', right: '10px', left: '10px', bottom: '10px' },
+      printBackground: true,
+      format: 'A1',
+      //preferCSSPageSize: false,
+    });
     await browser.close();
   }
 }
-
-
