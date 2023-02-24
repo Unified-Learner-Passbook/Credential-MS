@@ -23,6 +23,8 @@ import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { compile, template } from 'handlebars';
 import {join} from 'path';
 import puppeteer from 'puppeteer';
+import * as wkhtmltopdf from "wkhtmltopdf";
+import { existsSync, readFileSync, unlinkSync } from 'fs';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
@@ -224,16 +226,15 @@ export class CredentialsService {
 
   
 
-  async renderCredential(renderingRequest: RenderTemplateDTO){
+  renderCredential(renderingRequest: RenderTemplateDTO){
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
     const credential = renderingRequest.credential
     const subject = JSON.parse(credential.subject)
-    console.log(subject)
     let template = compile(rendering_template)
+    //data is our final compiled html
     const data = template(subject)
 
-    delete subject.id
     switch (output) {
       case RENDER_OUTPUT.QR:
         // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
@@ -241,9 +242,10 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
+        const filePath = `/src/credentials/buffer/render-${credential.id}.pdf`
         //console.log(data)
-        this.saveHTMLToPDF(data, join(process.cwd(), '/src/credentials/buffer/render-'+credential.id+'.pdf'));
-        break;
+          this.saveHTMLToPDF(data, join(process.cwd(), filePath));
+        return filePath;
 
       case RENDER_OUTPUT.QR_LINK:
         return data;
@@ -278,23 +280,16 @@ export class CredentialsService {
   }
 
   async saveHTMLToPDF (data : string, path: string){
-    const browser = await puppeteer.launch()
-    const page = await browser.newPage()
-    console.log(data);
-    await page.setContent(data, {waitUntil: 'domcontentloaded'});
-    lkafhnlqaiefh
-  
-    await page.emulateMediaType('screen');
-  
-    const pdf = await page.pdf({
-        path : path,
-        margin: {top: '10px', right: '10px', left: '10px', bottom: '10px'},
-        printBackground: true,
-        format: 'A1',
-        //preferCSSPageSize: false,
+    await wkhtmltopdf(data,{
+      output: path,
+      pageSize: 'A4',
+      disableExternalLinks: true,
+      disableInternalLinks:true,
+      disableJavascript:true,
+    }).on('end', function () {
+      console.log('file created');
     })
-    await browser.close();
-  }
+  };
 }
 
 

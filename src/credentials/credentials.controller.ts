@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Header, Param, Post, Res, StreamableFile } from '@nestjs/common';
-import { createReadStream } from 'fs';
+import {readFileSync, unlinkSync, existsSync, watch} from 'fs';
 import { CredentialsService } from './credentials.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
@@ -56,11 +56,30 @@ export class CredentialsController {
   }
 
   @Post('render')
-  @Header('Content-Type', 'application/pdf')
-  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) res: Response): StreamableFile {
-    this.credentialsService.renderCredential(renderRequest);
-    const file = createReadStream(join(process.cwd(), '/src/credentials/buffer/test.pdf'));
-    return new StreamableFile(file);
+  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) res: Response) {
+    const filePath = this.credentialsService.renderCredential(renderRequest);
+    // if (existsSync(filePath)){
+    //   console.log('galat jagah gaya');
+    //   const file = readFileSync(join(process.cwd(), filePath));
+    //   unlinkSync(join(process.cwd(), filePath));
+    //   return file;
+    // }
+    // else{
+    //   watch(join(process.cwd(), '/src/credentials/buffer'), (eventType, filename)=>{
+    //     console.log(eventType, 'Kuch hua');
+    //     if (existsSync(filePath)){
+    //       const file = readFileSync(join(process.cwd(), filePath));
+    //       unlinkSync(join(process.cwd(), filePath));
+    //       return file;
+    //     }
+    //   })
+      
+    // }
+      const file = readFileSync(join(process.cwd(), filePath));
+      unlinkSync(join(process.cwd(), filePath));
+      return file;
+
+    
 
   }
 }
