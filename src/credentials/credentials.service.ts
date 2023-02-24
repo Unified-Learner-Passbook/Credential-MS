@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, StreamableFile } from '@nestjs/common';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
 import { VCV2 } from '@prisma/client';
 import { verify } from 'crypto';
@@ -242,10 +242,12 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        const filePath = `/src/credentials/buffer/render-${credential.id}.pdf`
-        //console.log(data)
-          this.saveHTMLToPDF(data, join(process.cwd(), filePath));
-        return filePath;
+        return new StreamableFile( wkhtmltopdf(data,{
+          pageSize: 'A4',
+          disableExternalLinks: true,
+          disableInternalLinks:true,
+          disableJavascript:true,
+        }));
 
       case RENDER_OUTPUT.QR_LINK:
         return data;
@@ -278,18 +280,6 @@ export class CredentialsService {
       return err;
     }
   }
-
-  async saveHTMLToPDF (data : string, path: string){
-    await wkhtmltopdf(data,{
-      output: path,
-      pageSize: 'A4',
-      disableExternalLinks: true,
-      disableInternalLinks:true,
-      disableJavascript:true,
-    }).on('end', function () {
-      console.log('file created');
-    })
-  };
 }
 
 

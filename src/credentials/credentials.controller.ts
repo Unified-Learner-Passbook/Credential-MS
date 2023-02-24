@@ -9,6 +9,7 @@ import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import {join} from 'path'
 import type { Response } from 'express';
+import { PassThrough, Stream } from 'stream';
 
 @Controller('credentials')
 export class CredentialsController {
@@ -56,30 +57,10 @@ export class CredentialsController {
   }
 
   @Post('render')
-  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) res: Response) {
-    const filePath = this.credentialsService.renderCredential(renderRequest);
-    // if (existsSync(filePath)){
-    //   console.log('galat jagah gaya');
-    //   const file = readFileSync(join(process.cwd(), filePath));
-    //   unlinkSync(join(process.cwd(), filePath));
-    //   return file;
-    // }
-    // else{
-    //   watch(join(process.cwd(), '/src/credentials/buffer'), (eventType, filename)=>{
-    //     console.log(eventType, 'Kuch hua');
-    //     if (existsSync(filePath)){
-    //       const file = readFileSync(join(process.cwd(), filePath));
-    //       unlinkSync(join(process.cwd(), filePath));
-    //       return file;
-    //     }
-    //   })
-      
-    // }
-      const file = readFileSync(join(process.cwd(), filePath));
-      unlinkSync(join(process.cwd(), filePath));
-      return file;
+  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) res: Response):string | StreamableFile {
 
-    
+    //res.header({'Content-Type':'application/pdf'});
 
+    return this.credentialsService.renderCredential(renderRequest);
   }
 }
