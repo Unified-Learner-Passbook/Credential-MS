@@ -8,8 +8,9 @@ import { RenderTemplateDTO } from './dto/renderTemplate.dto';
 import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import {join} from 'path'
-import type { Response } from 'express';
+import { response, Response } from 'express';
 import { PassThrough, Stream } from 'stream';
+import { RenderRequestHeader } from './decorator/render-request.decorator';
 
 @Controller('credentials')
 export class CredentialsController {
@@ -57,9 +58,10 @@ export class CredentialsController {
   }
 
   @Post('render')
-  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) res: Response):string | StreamableFile {
+  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) response):string | StreamableFile {
 
-    //res.header({'Content-Type':'application/pdf'});
+    response.header('Content-Type','application/pdf');
+    //response.contentType('appplication/pdf');
 
     return this.credentialsService.renderCredential(renderRequest);
   }
