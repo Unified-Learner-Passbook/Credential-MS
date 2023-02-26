@@ -66,16 +66,11 @@ export class CredentialsController {
   }
 
   @Post('render')
-  @Header('Content-Type', 'application/pdf')
-  renderTemplate(
-    @Body() renderRequest: RenderTemplateDTO,
-    @Res({ passthrough: true }) res: Response,
-  ): StreamableFile {
-    const fanme = this.credentialsService.renderCredential(renderRequest);
-    console.log('fanme: ', fanme);
-    const file = createReadStream(join(process.cwd(), fanme));
-    const response = new StreamableFile(file);
-    // unlinkSync(join(process.cwd(), fanme));
-    return response;
+  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) response):string | StreamableFile {
+
+    response.header('Content-Type','application/pdf');
+    //response.contentType('appplication/pdf');
+
+    return this.credentialsService.renderCredential(renderRequest);
   }
 }
