@@ -22,7 +22,6 @@ import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { compile, template } from 'handlebars';
 import { join } from 'path';
-import puppeteer from 'puppeteer';
 import * as wkhtmltopdf from "wkhtmltopdf";
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 
@@ -252,6 +251,8 @@ export class CredentialsService {
         return data;
         break;
       case RENDER_OUTPUT.HTML:
+        return data;
+        break;
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.JSON:

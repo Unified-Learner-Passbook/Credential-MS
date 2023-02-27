@@ -19,6 +19,7 @@ import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { join } from 'path';
 import type { Response } from 'express';
+import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 
 @Controller('credentials')
 export class CredentialsController {
@@ -68,7 +69,16 @@ export class CredentialsController {
   @Post('render')
   renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) response):string | StreamableFile {
 
-    response.header('Content-Type','application/pdf');
+    let contentType = 'text/html'
+    switch (renderRequest.output){
+      case RENDER_OUTPUT.PDF:
+        contentType = 'application/pdf';
+        break;
+      case RENDER_OUTPUT.HTML:
+        contentType = 'text/html';
+        break;
+    }
+    response.header('Content-Type',contentType);
     //response.contentType('appplication/pdf');
 
     return this.credentialsService.renderCredential(renderRequest);
