@@ -1,5 +1,9 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, InternalServerErrorException, StreamableFile } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  StreamableFile,
+} from '@nestjs/common';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
 import { VCV2 } from '@prisma/client';
 import { verify } from 'crypto';
@@ -22,7 +26,7 @@ import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { compile, template } from 'handlebars';
 import { join } from 'path';
-import * as wkhtmltopdf from "wkhtmltopdf";
+import * as wkhtmltopdf from 'wkhtmltopdf';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -48,10 +52,15 @@ export class CredentialsService {
 
   async getCredentialById(id: string) {
     try {
-      const credential = await this.prisma.vCV2.findFirst({
+      const credential = await this.prisma.vCV2.findUnique({
         where: { id: id },
+        select: {
+          signed: true,
+        },
       });
-      return credential;
+      const res = credential.signed;
+      delete res['options'];
+      return res;
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
@@ -240,12 +249,14 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        return new StreamableFile(wkhtmltopdf(data, {
-          pageSize: 'A4',
-          disableExternalLinks: true,
-          disableInternalLinks: true,
-          disableJavascript: true,
-        }));
+        return new StreamableFile(
+          wkhtmltopdf(data, {
+            pageSize: 'A4',
+            disableExternalLinks: true,
+            disableInternalLinks: true,
+            disableJavascript: true,
+          }),
+        );
 
       case RENDER_OUTPUT.QR_LINK:
         return data;
