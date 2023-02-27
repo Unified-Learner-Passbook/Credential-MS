@@ -19,6 +19,7 @@ import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { join } from 'path';
 import type { Response } from 'express';
+import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 
 @Controller('credentials')
 export class CredentialsController {
@@ -66,16 +67,20 @@ export class CredentialsController {
   }
 
   @Post('render')
-  @Header('Content-Type', 'application/pdf')
-  renderTemplate(
-    @Body() renderRequest: RenderTemplateDTO,
-    @Res({ passthrough: true }) res: Response,
-  ): StreamableFile {
-    const fanme = this.credentialsService.renderCredential(renderRequest);
-    console.log('fanme: ', fanme);
-    const file = createReadStream(join(process.cwd(), fanme));
-    const response = new StreamableFile(file);
-    // unlinkSync(join(process.cwd(), fanme));
-    return response;
+  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) response):string | StreamableFile {
+
+    let contentType = 'text/html'
+    switch (renderRequest.output){
+      case RENDER_OUTPUT.PDF:
+        contentType = 'application/pdf';
+        break;
+      case RENDER_OUTPUT.HTML:
+        contentType = 'text/html';
+        break;
+    }
+    response.header('Content-Type',contentType);
+    //response.contentType('appplication/pdf');
+
+    return this.credentialsService.renderCredential(renderRequest);
   }
 }

@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, StreamableFile } from '@nestjs/common';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
 import { VCV2 } from '@prisma/client';
 import { verify } from 'crypto';
@@ -22,7 +22,8 @@ import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { compile, template } from 'handlebars';
 import { join } from 'path';
-import puppeteer from 'puppeteer';
+import * as wkhtmltopdf from "wkhtmltopdf";
+import { existsSync, readFileSync, unlinkSync } from 'fs';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
@@ -239,22 +240,19 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        //console.log(data)
-        this.saveHTMLToPDF(
-          data,
-          join(
-            process.cwd(),
-            '/src/credentials/buffer/render-' + credential.id + '.pdf',
-          ),
-        );
-
-        return '/src/credentials/buffer/render-' + credential.id + '.pdf';
-        break;
+        return new StreamableFile( wkhtmltopdf(data,{
+          pageSize: 'A4',
+          disableExternalLinks: true,
+          disableInternalLinks:true,
+          disableJavascript:true,
+        }));
 
       case RENDER_OUTPUT.QR_LINK:
         return data;
         break;
       case RENDER_OUTPUT.HTML:
+        return data;
+        break;
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.JSON:
@@ -281,25 +279,5 @@ export class CredentialsService {
       console.error(err);
       return err;
     }
-  }
-
-  async saveHTMLToPDF(data: string, path: string) {
-    const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    const page = await browser.newPage();
-    console.log(data);
-    await page.setContent(data, { waitUntil: 'domcontentloaded' });
-
-    await page.emulateMediaType('screen');
-
-    const pdf = await page.pdf({
-      path: path,
-      margin: { top: '10px', right: '10px', left: '10px', bottom: '10px' },
-      printBackground: true,
-      format: 'A1',
-      //preferCSSPageSize: false,
-    });
-    await browser.close();
   }
 }
