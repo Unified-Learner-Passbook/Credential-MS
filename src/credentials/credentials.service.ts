@@ -48,7 +48,7 @@ export class CredentialsService {
 
   async getCredentialById(id: string) {
     try {
-      const credential = await this.prisma.vC.findFirst({
+      const credential = await this.prisma.vCV2.findFirst({
         where: { id: id },
       });
       return credential;
@@ -240,11 +240,11 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        return new StreamableFile( wkhtmltopdf(data,{
+        return new StreamableFile(wkhtmltopdf(data, {
           pageSize: 'A4',
           disableExternalLinks: true,
-          disableInternalLinks:true,
-          disableJavascript:true,
+          disableInternalLinks: true,
+          disableJavascript: true,
         }));
 
       case RENDER_OUTPUT.QR_LINK:
