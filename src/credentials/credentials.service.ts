@@ -66,41 +66,49 @@ export class CredentialsService {
       const res = credential.signed;
       delete res['options'];
       delete res['proof'];
+      res['id'] = id;
       return res;
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
   }
 
-  async verifyCredential(verifyRequest: VerifyCredentialDTO) {
+  async verifyCredential(credId: string) {
     // resolve DID
     // const verificationMethod: VerificationMethod =
     //   credential.proof.verificationMethod;
     // const verificationMethod = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
-    console.log(
-      'process.env.IDENTIY_BASE_URL: ',
-      process.env.IDENTITY_BASE_URL,
-    );
-    const verificationMethod = verifyRequest.verifiableCredential.issuer;
-    const verificationURL = `${process.env.IDENTITY_BASE_URL}/did/resolve/${verificationMethod}`;
-    console.log('verificationURL: ', verificationURL);
-    const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
-      verificationURL,
-    );
-
-    const did: DIDDocument = dIDResponse.data as DIDDocument;
-    console.log('did in verify: ', verify);
-    console.log(
-      'verifyRequest.verifiableCredential:',
-      verifyRequest.verifiableCredential,
-    );
-    // console.log(
-    //   'verifyRequest.verifiableCredential?.proof?.proofValue: ',
-    //   verifyRequest.verifiableCredential?.proof?.proofValue,
-    // );
     try {
+      let credToVerify: any = await this.prisma.vCV2.findUnique({
+        where: {
+          id: credId,
+        },
+      });
+
+      credToVerify = credToVerify.signed;
+      delete credToVerify['options'];
+
+      console.log(
+        'process.env.IDENTIY_BASE_URL: ',
+        process.env.IDENTITY_BASE_URL,
+      );
+      const verificationMethod = credToVerify.issuer;
+      const verificationURL = `${process.env.IDENTITY_BASE_URL}/did/resolve/${verificationMethod}`;
+      console.log('verificationURL: ', verificationURL);
+      const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
+        verificationURL,
+      );
+
+      const did: DIDDocument = dIDResponse.data as DIDDocument;
+      console.log('did in verify: ', verify);
+      console.log('credToVerify:', credToVerify);
+      // console.log(
+      //   'verifyRequest.verifiableCredential?.proof?.proofValue: ',
+      //   verifyRequest.verifiableCredential?.proof?.proofValue,
+      // );
+      // try {
       const verified = await ION.verifyJws({
-        jws: verifyRequest.verifiableCredential?.proof?.proofValue,
+        jws: credToVerify?.proof?.proofValue,
         publicJwk: did.verificationMethod[0].publicKeyJwk,
       });
       console.debug(verified);
@@ -172,7 +180,7 @@ export class CredentialsService {
       const seqID = await this.prisma.counter.findFirst({
         where: { type_of_entity: 'Credential' },
       });
-
+      delete credInReq['id'];
       const newCred = await this.prisma.vCV2.create({
         //use update incase the above codeblock is uncommented
         data: {
@@ -188,6 +196,7 @@ export class CredentialsService {
           signed: credInReq as object,
         },
       });
+
       //update counter only when credential has been created successfully
       await this.prisma.counter.update({
         where: { id: seqID.id },
@@ -235,6 +244,7 @@ export class CredentialsService {
           subjectId: getCreds.subject?.id,
         },
         select: {
+          id: true,
           signed: true,
         },
       });
@@ -245,9 +255,11 @@ export class CredentialsService {
         );
 
       return credentials.map((cred) => {
-        delete cred['options'];
-        delete cred['proof'];
-        return cred;
+        const signed: { [k: string]: any } = cred.signed as any;
+        delete signed['id'];
+        delete signed['options'];
+        delete signed['proof'];
+        return { id: cred.id, ...signed };
       });
     } catch (err) {
       throw new InternalServerErrorException(err);
