@@ -52,9 +52,10 @@ export class CredentialsController {
     return this.credentialsService.deleteCredential(id);
   }
 
-  @Post('verify')
-  verifyCredential(@Body() verifyRequest: VerifyCredentialDTO) {
-    return this.credentialsService.verifyCredential(verifyRequest);
+  @Get(':id/verify')
+  verifyCredential(@Param('id') credId: string) {
+    console.log('credId: ', credId);
+    return this.credentialsService.verifyCredential(credId);
   }
 
   @Post('derive')
@@ -63,9 +64,11 @@ export class CredentialsController {
   }
 
   @Post('render')
-  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({ passthrough: true }) response): string | StreamableFile {
-
-    let contentType = 'text/html'
+  renderTemplate(
+    @Body() renderRequest: RenderTemplateDTO,
+    @Res({ passthrough: true }) response,
+  ): string | StreamableFile {
+    let contentType = 'text/html';
     switch (renderRequest.output) {
       case RENDER_OUTPUT.PDF:
         contentType = 'application/pdf';
