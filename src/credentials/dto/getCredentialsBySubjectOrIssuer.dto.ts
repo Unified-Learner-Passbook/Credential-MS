@@ -1,5 +1,10 @@
 export class GetCredentialsBySubjectOrIssuer {
-  subject?: any; //JSON
-  issuer?: string; //DID
-  subjectId?: string; //DID of student
+  subject?: {
+    id: string;
+  }; //JSON
+  issuer?: {
+    id: string;
+  }; //DID
+  // subjectId?: string; //DID of student
+  type: string;
 }

@@ -3,13 +3,11 @@ import {
   Controller,
   Delete,
   Get,
-  Header,
   Param,
   Post,
   Res,
   StreamableFile,
 } from '@nestjs/common';
-import { createReadStream, unlinkSync } from 'fs';
 import { CredentialsService } from './credentials.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
@@ -17,8 +15,6 @@ import { IssueCredentialDTO } from './dto/issue-credential.dto';
 import { RenderTemplateDTO } from './dto/renderTemplate.dto';
 import { UpdateStatusDTO } from './dto/update-status.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
-import { join } from 'path';
-import type { Response } from 'express';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 
 @Controller('credentials')
@@ -30,7 +26,7 @@ export class CredentialsController {
     return this.credentialsService.getCredentials();
   }
 
-  @Post()
+  @Post('/search')
   getCredentialsBySubject(@Body() getCreds: GetCredentialsBySubjectOrIssuer) {
     return this.credentialsService.getCredentialsBySubjectOrIssuer(getCreds);
   }
@@ -56,9 +52,10 @@ export class CredentialsController {
     return this.credentialsService.deleteCredential(id);
   }
 
-  @Post('verify')
-  verifyCredential(@Body() verifyRequest: VerifyCredentialDTO) {
-    return this.credentialsService.verifyCredential(verifyRequest);
+  @Get(':id/verify')
+  verifyCredential(@Param('id') credId: string) {
+    console.log('credId: ', credId);
+    return this.credentialsService.verifyCredential(credId);
   }
 
   @Post('derive')
@@ -67,10 +64,12 @@ export class CredentialsController {
   }
 
   @Post('render')
-  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) response):string | StreamableFile {
-
-    let contentType = 'text/html'
-    switch (renderRequest.output){
+  renderTemplate(
+    @Body() renderRequest: RenderTemplateDTO,
+    @Res({ passthrough: true }) response,
+  ): string | StreamableFile {
+    let contentType = 'text/html';
+    switch (renderRequest.output) {
       case RENDER_OUTPUT.PDF:
         contentType = 'application/pdf';
         break;
@@ -78,7 +77,7 @@ export class CredentialsController {
         contentType = 'text/html';
         break;
     }
-    response.header('Content-Type',contentType);
+    response.header('Content-Type', contentType);
     //response.contentType('appplication/pdf');
 
     return this.credentialsService.renderCredential(renderRequest);
