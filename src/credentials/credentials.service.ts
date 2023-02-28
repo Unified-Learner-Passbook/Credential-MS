@@ -60,6 +60,7 @@ export class CredentialsService {
       });
       const res = credential.signed;
       delete res['options'];
+      delete res['proof'];
       return res;
     } catch (err) {
       throw new InternalServerErrorException(err);
@@ -187,7 +188,22 @@ export class CredentialsService {
         where: { id: seqID.id },
         data: { for_next_credential: seqID.for_next_credential + 1 },
       });
-      return newCred;
+      // const keys = [
+      //   'seqid',
+      //   'subjectId',
+      //   'unsigned',
+      //   'signed',
+      //   'status',
+      //   'created_at',
+      //   'updated_at',
+      //   'presentationsId',
+      // ];
+      // for (const key of keys) {
+      //   delete newCred[key];
+      // }
+      const res = newCred.signed;
+      delete res['options'];
+      return { verifiableCredential: res };
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
