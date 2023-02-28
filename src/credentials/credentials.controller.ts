@@ -26,7 +26,7 @@ export class CredentialsController {
     return this.credentialsService.getCredentials();
   }
 
-  @Post()
+  @Post('/search')
   getCredentialsBySubject(@Body() getCreds: GetCredentialsBySubjectOrIssuer) {
     return this.credentialsService.getCredentialsBySubjectOrIssuer(getCreds);
   }

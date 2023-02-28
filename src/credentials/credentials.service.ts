@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import {
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   StreamableFile,
 } from '@nestjs/common';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
@@ -58,6 +59,10 @@ export class CredentialsService {
           signed: true,
         },
       });
+
+      if (!credential)
+        throw new NotFoundException('Credential for the given id not found');
+
       const res = credential.signed;
       delete res['options'];
       delete res['proof'];
@@ -188,19 +193,7 @@ export class CredentialsService {
         where: { id: seqID.id },
         data: { for_next_credential: seqID.for_next_credential + 1 },
       });
-      // const keys = [
-      //   'seqid',
-      //   'subjectId',
-      //   'unsigned',
-      //   'signed',
-      //   'status',
-      //   'created_at',
-      //   'updated_at',
-      //   'presentationsId',
-      // ];
-      // for (const key of keys) {
-      //   delete newCred[key];
-      // }
+
       const res = newCred.signed;
       delete res['options'];
       return { verifiableCredential: res };
@@ -234,15 +227,28 @@ export class CredentialsService {
     try {
       console.log('subject: ', getCreds.subject);
       console.log('issuer: ', getCreds.issuer);
-      console.log('subjectId: ', getCreds.subjectId);
+      // console.log('subjectId: ', getCreds.subjectId);
       const credentials = await this.prisma.vCV2.findMany({
         where: {
           subject: JSON.stringify(getCreds.subject),
-          issuer: getCreds.issuer,
-          subjectId: getCreds.subjectId,
+          issuer: getCreds.issuer?.id,
+          subjectId: getCreds.subject?.id,
+        },
+        select: {
+          signed: true,
         },
       });
-      return credentials;
+
+      if (credentials.length == 0)
+        throw new NotFoundException(
+          'No credentials found for the given subject or issuer',
+        );
+
+      return credentials.map((cred) => {
+        delete cred['options'];
+        delete cred['proof'];
+        return cred;
+      });
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
