@@ -219,14 +219,36 @@ export class CredentialsService {
         where: { type_of_entity: 'Credential' },
       });
       // delete credInReq['id'];
-      const id = uuid();
-      credInReq.id = id;
+      // const id = uuid();
+      const id: AxiosResponse = await this.httpService.axiosRef.post(
+        `${process.env.IDENTITY_BASE_URL}/did/generate`,
+        {
+          content: [
+            {
+              alsoKnownAs: ['did.chinmoy12c@gmail.com.chinmoytest'],
+              services: [
+                {
+                  id: 'IdentityHub',
+                  type: 'IdentityHub',
+                  serviceEndpoint: {
+                    '@context': 'schema.identity.foundation/hub',
+                    '@type': 'UserServiceEndpoint',
+                    instance: ['did:test:hub.id'],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      );
+      console.log('id: ', id.data);
+      credInReq.id = id.data[0]?.id;
 
       // TODO: add created by and updated by
       const newCred = await this.prisma.vCV2.create({
         //use update incase the above codeblock is uncommented
         data: {
-          id: id,
+          id: credInReq.id,
           seqid: seqID.for_next_credential,
           type: credInReq.type,
           issuer: credInReq.issuer as string,
