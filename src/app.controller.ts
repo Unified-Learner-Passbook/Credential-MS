@@ -21,14 +21,14 @@ export class AppController {
     private configService: ConfigService,
   ) {}
 
-  @ApiOperation({ summary: 'VC Claim' })
-  @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })
-  @ApiBody({ type: VCResponse })
-  @Post('claim')
-  @HttpCode(201)
-  claim(@Body() vcRequest: VCRequest): any {
-    return this.appService.claim(vcRequest);
-  }
+  // @ApiOperation({ summary: 'VC Claim' })
+  // @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })
+  // @ApiBody({ type: VCResponse })
+  // @Post('claim')
+  // @HttpCode(201)
+  // claim(@Body() vcRequest: VCRequest): any {
+  //   return this.appService.claim(vcRequest);
+  // }
 
   @ApiOperation({ summary: 'Sign a claim' })
   @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })

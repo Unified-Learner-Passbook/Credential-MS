@@ -221,6 +221,8 @@ export class CredentialsService {
       // delete credInReq['id'];
       const id = uuid();
       credInReq.id = id;
+
+      // TODO: add created by and updated by
       const newCred = await this.prisma.vCV2.create({
         //use update incase the above codeblock is uncommented
         data: {
