@@ -30,7 +30,7 @@ import { join } from 'path';
 import * as wkhtmltopdf from 'wkhtmltopdf';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { VerifyCredentialResponse } from './dto/verify-response.dto';
-
+import { v4 as uuid } from 'uuid';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
 
@@ -106,6 +106,7 @@ export class CredentialsService {
           status: 'expired',
           checks: [{ revoked: 'OK', expired: 'OK' }],
         };*/
+
       const status = credToVerify.status;
       credToVerify = credToVerify.signed;
       delete credToVerify['options'];
@@ -189,7 +190,9 @@ export class CredentialsService {
 
       */
 
-      credInReq.proof = {
+      // TODO: Verify the credential with the credential schema using ajv
+
+      credInReq['proof'] = {
         proofValue: await this.signVC(
           transformCredentialInput(credInReq as CredentialPayload),
           credInReq.issuer as string,
@@ -215,10 +218,13 @@ export class CredentialsService {
       const seqID = await this.prisma.counter.findFirst({
         where: { type_of_entity: 'Credential' },
       });
-      delete credInReq['id'];
+      // delete credInReq['id'];
+      const id = uuid();
+      credInReq.id = id;
       const newCred = await this.prisma.vCV2.create({
         //use update incase the above codeblock is uncommented
         data: {
+          id: id,
           seqid: seqID.for_next_credential,
           type: credInReq.type,
           issuer: credInReq.issuer as string,
@@ -227,8 +233,9 @@ export class CredentialsService {
           subject: JSON.stringify(credInReq.credentialSubject),
           subjectId: (credInReq.credentialSubject as any).id,
           proof: credInReq.proof as any,
-          credential_schema: JSON.stringify(issueRequest.credentialSchema), //because they can't refer to the schema db from here through an ID
+          credential_schema: issueRequest.credentialSchemaId, //because they can't refer to the schema db from here through an ID
           signed: credInReq as object,
+          tags: issueRequest.tags,
         },
       });
 
@@ -240,7 +247,15 @@ export class CredentialsService {
 
       const res = newCred.signed;
       delete res['options'];
-      return { verifiableCredential: res };
+      return {
+        credential: res,
+        credentialSchemaId: newCred.credential_schema,
+        createdAt: newCred.created_at,
+        updatedAt: newCred.updated_at,
+        createdBy: '',
+        updatedBy: '',
+        tags: newCred.tags, // TODO: add support for tags
+      };
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
