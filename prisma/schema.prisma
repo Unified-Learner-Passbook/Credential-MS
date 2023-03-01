@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
@@ -31,7 +31,7 @@ model VC {
 }
 
 model VCV2 {
-  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  id                String         @id @default(uuid()) @map("_id") //@db.ObjectId
   seqid             Int            @unique
   type              String[]
   issuer            String
@@ -47,6 +47,9 @@ model VCV2 {
   status            VCStatus       @default(ISSUED)
   created_at        DateTime       @default(now())
   updated_at        DateTime?      @default(now())
+  createdBy         String?
+  updatedBy         String?
+  tags              String[]
   Presentations     Presentations? @relation(fields: [presentationsId], references: [id])
   presentationsId   String?        @db.ObjectId
 }
