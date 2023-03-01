@@ -131,6 +131,10 @@ export class CredentialsService {
 
       */
 
+
+      
+      
+      console.time("Sign")
       credInReq.proof = {
         proofValue: await this.signVC(
           transformCredentialInput(credInReq as CredentialPayload),
@@ -141,10 +145,12 @@ export class CredentialsService {
         verificationMethod: credInReq.issuer,
         proofPurpose: 'assertionMethod',
       };
+      console.timeEnd("Sign")
       //console.log('onto creation');
 
       //SEQUENTIAL ID LOGIC
       //first credential entry if database is empty
+      console.time("Sequential ID")
       if (
         (await this.prisma.counter.findFirst({
           where: { type_of_entity: 'Credential' },
@@ -157,7 +163,9 @@ export class CredentialsService {
       const seqID = await this.prisma.counter.findFirst({
         where: { type_of_entity: 'Credential' },
       });
+      console.timeEnd("Sequential ID")
 
+      console.time("Create Signed Cred")
       const newCred = await this.prisma.vCV2.create({
         //use update incase the above codeblock is uncommented
         data: {
@@ -173,11 +181,14 @@ export class CredentialsService {
           signed: credInReq as object,
         },
       });
+      console.timeEnd("Create Signed Cred")
       //update counter only when credential has been created successfully
+      console.time("Counter Update")
       await this.prisma.counter.update({
         where: { id: seqID.id },
         data: { for_next_credential: seqID.for_next_credential + 1 },
       });
+      console.timeEnd("Counter Update")
       return newCred;
     } catch (err) {
       throw new InternalServerErrorException(err);
