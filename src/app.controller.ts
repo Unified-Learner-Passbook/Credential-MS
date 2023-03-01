@@ -14,12 +14,17 @@ import { Verifiable, W3CCredential } from 'did-jwt-vc';
 import { IssueRequest, VCRequest, VCResponse } from './app.interface';
 import { AppService } from './app.service';
 
-@Controller('credentials')
+@Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
     private configService: ConfigService,
   ) {}
+
+  @Get()
+  handleHealthCheck(): string {
+    return 'Hello World!';
+  }
 
   // @ApiOperation({ summary: 'VC Claim' })
   // @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })

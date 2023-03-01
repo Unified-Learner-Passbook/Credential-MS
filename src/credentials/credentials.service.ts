@@ -17,7 +17,7 @@ import {
 } from 'did-jwt-vc';
 import { DIDDocument } from 'did-resolver';
 import { lastValueFrom, map } from 'rxjs';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from '../prisma.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
 import { IssueCredentialDTO } from './dto/issue-credential.dto';
