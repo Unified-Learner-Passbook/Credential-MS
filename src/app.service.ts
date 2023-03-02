@@ -61,7 +61,7 @@ export class AppService {
           payload: JSON.stringify(credentialPlayload),
         },
       );
-      console.timeEnd("Axios Resp");
+    console.timeEnd("Axios Resp");
     return signedVCResponse.data.signed as string;
   }
 
@@ -135,7 +135,7 @@ export class AppService {
   }
 
   async renderAsQR(credentialId: string): Promise<any> {
-    const credential = await this.prisma.vC.findUnique({
+    const credential = await this.prisma.vCV2.findUnique({
       where: { id: credentialId },
     });
 
