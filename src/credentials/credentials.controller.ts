@@ -37,7 +37,7 @@ export class CredentialsController {
     return this.credentialsService.getCredentialById(id?.id);
   }
 
-  @Post('claim')
+  @Post('issue')
   issueCredentials(@Body() issueRequest: IssueCredentialDTO) {
     return this.credentialsService.issueCredential(issueRequest);
   }
