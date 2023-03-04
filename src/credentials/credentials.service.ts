@@ -1,5 +1,9 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, InternalServerErrorException, StreamableFile } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  StreamableFile,
+} from '@nestjs/common';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
 import { VCV2 } from '@prisma/client';
 import { verify } from 'crypto';
@@ -22,7 +26,7 @@ import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { compile, template } from 'handlebars';
 import { join } from 'path';
-import * as wkhtmltopdf from "wkhtmltopdf";
+import * as wkhtmltopdf from 'wkhtmltopdf';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -97,8 +101,8 @@ export class CredentialsService {
   }
 
   async signVC(credentialPlayload: JwtCredentialPayload, did: string) {
-    console.log('credentialPlayload: ', credentialPlayload);
-    console.log('did: ', did);
+    // console.log('credentialPlayload: ', credentialPlayload);
+    // console.log('did: ', did);
     // did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
     const signedVCResponse: AxiosResponse =
       await this.httpService.axiosRef.post(
@@ -130,11 +134,7 @@ export class CredentialsService {
         },
 
       */
-
-
-      
-      
-      console.time("Sign")
+      console.time('Sign');
       credInReq.proof = {
         proofValue: await this.signVC(
           transformCredentialInput(credInReq as CredentialPayload),
@@ -145,31 +145,31 @@ export class CredentialsService {
         verificationMethod: credInReq.issuer,
         proofPurpose: 'assertionMethod',
       };
-      console.timeEnd("Sign")
+      console.timeEnd('Sign');
       //console.log('onto creation');
 
       //SEQUENTIAL ID LOGIC
       //first credential entry if database is empty
-      console.time("Sequential ID")
-      if (
-        (await this.prisma.counter.findFirst({
-          where: { type_of_entity: 'Credential' },
-        })) == null
-      ) {
-        await this.prisma.counter.create({
-          data: {},
-        });
-      }
-      const seqID = await this.prisma.counter.findFirst({
-        where: { type_of_entity: 'Credential' },
-      });
-      console.timeEnd("Sequential ID")
+      // console.time("Sequential ID")
+      // if (
+      //   (await this.prisma.counter.findFirst({
+      //     where: { type_of_entity: 'Credential' },
+      //   })) == null
+      // ) {
+      //   await this.prisma.counter.create({
+      //     data: {},
+      //   });
+      // }
+      // const seqID = await this.prisma.counter.findFirst({
+      //   where: { type_of_entity: 'Credential' },
+      // });
+      // console.timeEnd("Sequential ID")
 
-      console.time("Create Signed Cred")
+      console.time('Create Signed Cred');
       const newCred = await this.prisma.vCV2.create({
         //use update incase the above codeblock is uncommented
         data: {
-          seqid: seqID.for_next_credential,
+          // seqid: seqID.for_next_credential,
           type: credInReq.type,
           issuer: credInReq.issuer as string,
           issuanceDate: credInReq.issuanceDate,
@@ -181,14 +181,14 @@ export class CredentialsService {
           signed: credInReq as object,
         },
       });
-      console.timeEnd("Create Signed Cred")
+      console.timeEnd('Create Signed Cred');
       //update counter only when credential has been created successfully
-      console.time("Counter Update")
-      await this.prisma.counter.update({
-        where: { id: seqID.id },
-        data: { for_next_credential: seqID.for_next_credential + 1 },
-      });
-      console.timeEnd("Counter Update")
+      // console.time("Counter Update")
+      // await this.prisma.counter.update({
+      //   where: { id: seqID.id },
+      //   data: { for_next_credential: seqID.for_next_credential + 1 },
+      // });
+      // console.timeEnd("Counter Update")
       return newCred;
     } catch (err) {
       throw new InternalServerErrorException(err);
@@ -251,12 +251,14 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        return new StreamableFile( wkhtmltopdf(data,{
-          pageSize: 'A4',
-          disableExternalLinks: true,
-          disableInternalLinks:true,
-          disableJavascript:true,
-        }));
+        return new StreamableFile(
+          wkhtmltopdf(data, {
+            pageSize: 'A4',
+            disableExternalLinks: true,
+            disableInternalLinks: true,
+            disableJavascript: true,
+          }),
+        );
 
       case RENDER_OUTPUT.QR_LINK:
         return data;
