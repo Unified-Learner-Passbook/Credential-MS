@@ -42,4 +42,5 @@ export class IssueCredentialDTO {
     };
     [k: string]: unknown;
   };
+  tags: string[]
 }

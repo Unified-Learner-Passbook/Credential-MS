@@ -41,9 +41,16 @@ export class CredentialsService {
     private readonly httpService: HttpService,
   ) {}
 
-  async getCredentials() {
+  async getCredentials(tags:string[]) {
     try {
-      const credentials = await this.prisma.vCV2.findMany();
+      console.log("tagsArray",tags);
+      const credentials = await this.prisma.vCV2.findMany({
+        where: {
+          tags: {
+            hasSome: [...tags],
+          },
+        },
+    });
       return credentials;
     } catch (err) {
       throw new InternalServerErrorException(err);
@@ -179,6 +186,7 @@ export class CredentialsService {
           proof: credInReq.proof as any,
           credential_schema: JSON.stringify(issueRequest.credentialSchema), //because they can't refer to the schema db from here through an ID
           signed: credInReq as object,
+          tags: issueRequest.tags,
         },
       });
       console.timeEnd('Create Signed Cred');

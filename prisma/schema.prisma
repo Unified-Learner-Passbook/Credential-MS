@@ -50,6 +50,7 @@ model VCV2 {
   updated_at        DateTime?      @default(now())
   Presentations     Presentations? @relation(fields: [presentationsId], references: [id])
   presentationsId   String?
+  tags              String[]
 }
 
 model Counter {

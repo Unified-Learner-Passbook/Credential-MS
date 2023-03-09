@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Header,
+  Query,
   Param,
   Post,
   Res,
@@ -26,8 +27,11 @@ export class CredentialsController {
   constructor(private readonly credentialsService: CredentialsService) {}
 
   @Get()
-  getCredentials() {
-    return this.credentialsService.getCredentials();
+  getCredentials(@Query('tags') tags: string ) {
+    console.log("tags:", tags);
+    return this.credentialsService.getCredentials(
+      tags.split(','),
+    );
   }
 
   @Post()
