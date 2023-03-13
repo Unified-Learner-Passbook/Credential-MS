@@ -249,7 +249,7 @@ export class CredentialsService {
         //use update incase the above codeblock is uncommented
         data: {
           id: credInReq.id,
-          seqid: seqID.for_next_credential,
+          // seqid: seqID.for_next_credential,
           type: credInReq.type,
           issuer: credInReq.issuer as string,
           issuanceDate: credInReq.issuanceDate,

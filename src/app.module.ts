@@ -5,8 +5,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { CredentialsModule } from './credentials/credentials.module';
-import { PresentationsModule } from './presentations/presentations.module';
-import { ExchangesModule } from './exchanges/exchanges.module';
+// import { PresentationsModule } from './presentations/presentations.module';
+// import { ExchangesModule } from './exchanges/exchanges.module';
 
 @Module({
   imports: [
@@ -15,8 +15,8 @@ import { ExchangesModule } from './exchanges/exchanges.module';
     // IssuingModule,
     // VerifyingModule,
     CredentialsModule,
-    PresentationsModule,
-    ExchangesModule,
+    // PresentationsModule,
+    // ExchangesModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService, PrismaService, /*IssuingService*/],
