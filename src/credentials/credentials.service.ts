@@ -381,19 +381,19 @@ export class CredentialsService {
   }
 
   // UTILITY FUNCTIONS
-  async renderAsQR(credentialId: string): Promise<any> {
-    const credential = await this.prisma.vC.findUnique({
-      where: { id: credentialId },
-    });
+  // async renderAsQR(credentialId: string): Promise<any> {
+  //   const credential = await this.prisma.vC.findUnique({
+  //     where: { id: credentialId },
+  //   });
 
-    try {
-      const QRData = await QRCode.toDataURL(
-        (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
-      );
-      return QRData;
-    } catch (err) {
-      console.error(err);
-      return err;
-    }
-  }
+  //   try {
+  //     const QRData = await QRCode.toDataURL(
+  //       (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
+  //     );
+  //     return QRData;
+  //   } catch (err) {
+  //     console.error(err);
+  //     return err;
+  //   }
+  // }
 }

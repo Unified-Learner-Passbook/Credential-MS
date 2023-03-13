@@ -3,9 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma.service';
 import { CredentialsService } from './credentials.service';
 import Ajv2019 from 'ajv/dist/2019';
-import { rejects } from 'assert';
-import { NotImplementedException, StreamableFile } from '@nestjs/common';
-import { RenderTemplateDTO } from './dto/renderTemplate.dto';
+import { StreamableFile } from '@nestjs/common';
 
 // setup ajv
 const ajv = new Ajv2019();

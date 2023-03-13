@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Header,
   Query,
   Param,
   Post,
@@ -11,13 +10,13 @@ import {
   StreamableFile,
 } from '@nestjs/common';
 import { CredentialsService } from './credentials.service';
-import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
 import { IssueCredentialDTO } from './dto/issue-credential.dto';
 import { RenderTemplateDTO } from './dto/renderTemplate.dto';
-import { UpdateStatusDTO } from './dto/update-status.dto';
-import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
+import { UpdateStatusDTO } from './dto/update-status.dto';
+import { DeriveCredentialDTO } from './dto/derive-credential.dto';
+import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 
 @Controller('credentials')
 export class CredentialsController {
@@ -61,10 +60,10 @@ export class CredentialsController {
     return this.credentialsService.verifyCredential(credId);
   }
 
-  @Post('derive')
-  deriveCredential(@Body() deriveRequest: DeriveCredentialDTO) {
-    return this.credentialsService.deriveCredential(deriveRequest);
-  }
+  // @Post('derive')
+  // deriveCredential(@Body() deriveRequest: DeriveCredentialDTO) {
+  //   return this.credentialsService.deriveCredential(deriveRequest);
+  // }
 
   @Post('render')
   renderTemplate(
