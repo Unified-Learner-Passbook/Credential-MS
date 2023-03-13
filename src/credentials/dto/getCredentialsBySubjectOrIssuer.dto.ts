@@ -6,5 +6,5 @@ export class GetCredentialsBySubjectOrIssuer {
     id: string;
   }; //DID
   // subjectId?: string; //DID of student
-  type: string;
+  type?: string;
 }

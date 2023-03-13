@@ -44,57 +44,52 @@ export class CredentialsService {
   ) {}
 
   async getCredentials(tags: string[]) {
-    try {
-      console.log('tagsArray', tags);
-      const credentials = await this.prisma.vCV2.findMany({
-        where: {
-          tags: {
-            hasSome: [...tags],
-          },
+    console.log('tagsArray', tags);
+    const credentials = await this.prisma.vCV2.findMany({
+      where: {
+        tags: {
+          hasSome: [...tags],
         },
-      });
-      return credentials;
-    } catch (err) {
-      throw new InternalServerErrorException(err);
-    }
+      },
+    });
+    return credentials;
   }
 
   async getCredentialById(id: string) {
-    try {
-      const credential = await this.prisma.vCV2.findUnique({
-        where: { id: id },
-        select: {
-          signed: true,
-        },
-      });
+    const credential = await this.prisma.vCV2.findUnique({
+      where: { id: id },
+      select: {
+        signed: true,
+      },
+    });
 
-      if (!credential)
-        throw new NotFoundException('Credential for the given id not found');
+    if (!credential)
+      throw new NotFoundException('Credential for the given id not found');
 
-      const res = credential.signed;
-      delete res['options'];
-      delete res['proof'];
-      res['id'] = id;
-      return res;
-    } catch (err) {
-      throw new InternalServerErrorException(err);
-    }
+    const res = credential.signed;
+    delete res['options'];
+    delete res['proof'];
+    res['id'] = id;
+    return res;
   }
 
   async verifyCredential(credId: string) {
+    let credToVerify: any = null;
+    credToVerify = await this.prisma.vCV2.findUnique({
+      where: {
+        id: credId,
+      },
+    });
+
+    // invalid request in case credential is not found
+    if (!credToVerify) {
+      throw new NotFoundException({ errors: ['Credential not found'] });
+      // return {
+      //   errors: ['Credential not found'],
+      // };
+    }
     try {
       // getting the cred from db
-      let credToVerify: any = await this.prisma.vCV2.findUnique({
-        where: {
-          id: credId,
-        },
-      });
-
-      // invalid request in case credential is not found
-      if (!credToVerify)
-        return {
-          errors: ['Credential not found'],
-        };
 
       // no need to verify in case the credential is revoked ? or do I resolve the JWKS anyway
       /*if (credToVerify.status === VCStatus.REVOKED)
@@ -301,7 +296,7 @@ export class CredentialsService {
 
   async deleteCredential(id: string) {
     try {
-      const credential = await this.prisma.vC.update({
+      const credential = await this.prisma.vCV2.update({
         where: { id: id },
         data: {
           status: 'REVOKED',

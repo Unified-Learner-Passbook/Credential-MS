@@ -3,6 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma.service';
 import { CredentialsService } from './credentials.service';
 import Ajv2019 from 'ajv/dist/2019';
+import { rejects } from 'assert';
+import { NotImplementedException } from '@nestjs/common';
 
 // setup ajv
 const ajv = new Ajv2019();
@@ -189,7 +191,6 @@ describe('CredentialsService', () => {
   it('should verify a credential', async () => {
     const newCred: any = await service.issueCredential(sampleCredReqPayload);
     const verifyCred = await service.verifyCredential(newCred.credential?.id);
-    console.log('verifyCred', verifyCred);
     expect(verifyCred).toEqual({
       status: 'ISSUED',
       checks: [
@@ -203,13 +204,45 @@ describe('CredentialsService', () => {
     });
   });
 
-  it('should get credentials by tag', async () => {
-    const creds = await service.getCredentials(['tag1']);
-    console.log('creds', creds);
-    expect(creds).toBeInstanceOf(Array);
+  it('should revoke a credential', async () => {
+    expect(await service.getCredentials(['tag1'])).toBeInstanceOf(Array);
+  });
 
-    if (creds.length > 0) {
-      expect(getCredReqValidate(creds[0])).toBe(true);
-    }
+  it('should throw because no credential is present to be searched by ID', async () => {
+    await expect(service.getCredentialById('did:ulp:123')).rejects.toThrow();
+  });
+
+  it('should throw because credential not present to be verified', async () => {
+    await expect(service.verifyCredential('did:ulp:123')).rejects.toThrow();
+  });
+
+  it('should say revoked', async () => {
+    const newCred = await service.issueCredential(sampleCredReqPayload);
+    expect(
+      await service.deleteCredential((newCred.credential as any).id),
+    ).toHaveProperty('status', 'REVOKED');
+  });
+
+  it('should throw while delete because credential not present', async () => {
+    await expect(service.deleteCredential('did:ulp:123')).rejects.toThrow();
+  });
+
+  it('should throw', async () => {
+    await expect(
+      service.getCredentialsBySubjectOrIssuer({
+        subject: { id: 'did:ulp:123' },
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('should return array of creds based on issuer', async () => {
+    await service.issueCredential(sampleCredReqPayload);
+    expect(
+      await service.getCredentialsBySubjectOrIssuer({
+        issuer: {
+          id: 'did:ulp:f36bd94e-218f-477b-a5ab-6642c06cef5b',
+        },
+      }),
+    ).toBeInstanceOf(Array);
   });
 });

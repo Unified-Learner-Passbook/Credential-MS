@@ -51,7 +51,7 @@ export class CredentialsController {
   }
 
   @Delete(':id')
-  delteCredential(@Param() id: string) {
+  delteCredential(@Param('id') id: string) {
     return this.credentialsService.deleteCredential(id);
   }
 
