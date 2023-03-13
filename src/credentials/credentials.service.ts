@@ -31,9 +31,9 @@ import * as wkhtmltopdf from 'wkhtmltopdf';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { VerifyCredentialResponse } from './dto/verify-response.dto';
 import { v4 as uuid } from 'uuid';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
-
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ION = require('@decentralized-identity/ion-tools');
 @Injectable()
@@ -45,7 +45,7 @@ export class CredentialsService {
 
   async getCredentials(tags: string[]) {
     try {
-      console.log("tagsArray", tags);
+      console.log('tagsArray', tags);
       const credentials = await this.prisma.vCV2.findMany({
         where: {
           tags: {
@@ -180,6 +180,7 @@ export class CredentialsService {
   async issueCredential(issueRequest: IssueCredentialDTO) {
     try {
       const credInReq = issueRequest.credential;
+      console.log('credInReq: ', credInReq);
       /*
       //Code block for unsigned credential
 

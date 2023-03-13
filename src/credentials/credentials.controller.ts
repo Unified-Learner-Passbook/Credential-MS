@@ -25,10 +25,8 @@ export class CredentialsController {
 
   @Get()
   getCredentials(@Query('tags') tags: string) {
-    console.log("tags:", tags);
-    return this.credentialsService.getCredentials(
-      tags.split(','),
-    );
+    console.log('tags:', tags);
+    return this.credentialsService.getCredentials(tags.split(','));
   }
 
   @Post('/search')
@@ -42,7 +40,7 @@ export class CredentialsController {
     return this.credentialsService.getCredentialById(id?.id);
   }
 
-  @Post('claim')
+  @Post('issue')
   issueCredentials(@Body() issueRequest: IssueCredentialDTO) {
     return this.credentialsService.issueCredential(issueRequest);
   }

@@ -13,7 +13,7 @@ describe('AppController (e2e)', () => {
         'https://www.w3.org/2018/credentials/examples/v1',
       ],
       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-      issuer: 'did:ulp:9d46124a-201a-4ff8-8bd4-1f25ce985bfa',
+      issuer: 'did:ulp:f36bd94e-218f-477b-a5ab-6642c06cef5b',
       issuanceDate: '2023-02-06T11:56:27.259Z',
       expirationDate: '2023-02-08T11:56:27.259Z',
       credentialSubject: {
@@ -44,9 +44,9 @@ describe('AppController (e2e)', () => {
       .expect('Hello World!');
   });
 
-  it('/credentials/claim (POST)', () => {
+  it('/credentials/issue (POST)', () => {
     return request(app.getHttpServer())
-      .post('/credentials/claim')
+      .post('/credentials/issue')
       .send(sampleCredReqPayload)
       .expect(201)
       .then((res) => {
