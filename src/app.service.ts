@@ -49,8 +49,10 @@ export class AppService {
   }
 
   async signVC(credentialPlayload: JwtCredentialPayload, did: string) {
-    console.log(credentialPlayload);
+    //console.log(credentialPlayload);
     did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    //console.log(process.env.IDENTITY_BASE_URL);
+    console.time("Axios Resp");
     const signedVCResponse: AxiosResponse =
       await this.httpService.axiosRef.post(
         `${process.env.IDENTITY_BASE_URL}/utils/sign`,
@@ -59,6 +61,7 @@ export class AppService {
           payload: JSON.stringify(credentialPlayload),
         },
       );
+    console.timeEnd("Axios Resp");
     return signedVCResponse.data.signed as string;
   }
 
@@ -132,7 +135,7 @@ export class AppService {
   }
 
   async renderAsQR(credentialId: string): Promise<any> {
-    const credential = await this.prisma.vC.findUnique({
+    const credential = await this.prisma.vCV2.findUnique({
       where: { id: credentialId },
     });
 

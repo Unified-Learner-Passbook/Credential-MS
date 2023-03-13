@@ -20,6 +20,7 @@ RUN apt-get update \
     libxss1 \
     libxtst6
 
+
 RUN apt-get install -y \
     fonts-liberation \
     # gconf-service \
@@ -53,7 +54,7 @@ RUN apt-get install -y \
     # libxss1 \
     # libxtst6 \
     xdg-utils
-    
+
 WORKDIR /app
 COPY . ./
 RUN yarn

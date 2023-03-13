@@ -43,9 +43,16 @@ export class CredentialsService {
     private readonly httpService: HttpService,
   ) {}
 
-  async getCredentials() {
+  async getCredentials(tags: string[]) {
     try {
-      const credentials = await this.prisma.vCV2.findMany();
+      console.log("tagsArray", tags);
+      const credentials = await this.prisma.vCV2.findMany({
+        where: {
+          tags: {
+            hasSome: [...tags],
+          },
+        },
+      });
       return credentials;
     } catch (err) {
       throw new InternalServerErrorException(err);
@@ -156,8 +163,8 @@ export class CredentialsService {
   }
 
   async signVC(credentialPlayload: JwtCredentialPayload, did: string) {
-    console.log('credentialPlayload: ', credentialPlayload);
-    console.log('did: ', did);
+    // console.log('credentialPlayload: ', credentialPlayload);
+    // console.log('did: ', did);
     // did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
     const signedVCResponse: AxiosResponse =
       await this.httpService.axiosRef.post(
@@ -202,6 +209,7 @@ export class CredentialsService {
         verificationMethod: credInReq.issuer,
         proofPurpose: 'assertionMethod',
       };
+      console.timeEnd('Sign');
       //console.log('onto creation');
 
       //SEQUENTIAL ID LOGIC
