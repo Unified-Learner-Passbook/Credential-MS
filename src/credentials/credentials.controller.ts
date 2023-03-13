@@ -45,10 +45,10 @@ export class CredentialsController {
     return this.credentialsService.issueCredential(issueRequest);
   }
 
-  @Post('status')
-  updateCredential(@Body() updateRequest: UpdateStatusDTO) {
-    return this.credentialsService.updateCredential(updateRequest);
-  }
+  // @Post('status')
+  // updateCredential(@Body() updateRequest: UpdateStatusDTO) {
+  //   return this.credentialsService.updateCredential(updateRequest);
+  // }
 
   @Delete(':id')
   delteCredential(@Param('id') id: string) {

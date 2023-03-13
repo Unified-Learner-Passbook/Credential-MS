@@ -289,11 +289,6 @@ export class CredentialsService {
     }
   }
 
-  async updateCredential(updateRequest: UpdateStatusDTO) {
-    // TODO
-    return;
-  }
-
   async deleteCredential(id: string) {
     try {
       const credential = await this.prisma.vCV2.update({
@@ -345,11 +340,13 @@ export class CredentialsService {
   }
 
   renderCredential(renderingRequest: RenderTemplateDTO) {
+    console.log('renderingReq\n', renderingRequest);
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
-    const credential = renderingRequest.credential;
-    const subject = JSON.parse(credential.subject);
-    console.log(subject);
+    const credential: any = renderingRequest.credential;
+    console.log(credential);
+    const subject = credential.credentialSubject;
+    console.log('subject: ', subject);
     const template = compile(rendering_template);
     const data = template(subject);
 
@@ -381,10 +378,6 @@ export class CredentialsService {
       case RENDER_OUTPUT.JSON:
         break;
     }
-  }
-
-  async deriveCredential(deriveRequest: DeriveCredentialDTO) {
-    return;
   }
 
   // UTILITY FUNCTIONS
