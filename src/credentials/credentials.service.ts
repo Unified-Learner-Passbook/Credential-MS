@@ -344,9 +344,9 @@ export class CredentialsService {
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
     const credential: any = renderingRequest.credential;
-    console.log(credential);
+    // console.log(credential);
     const subject = credential.credentialSubject;
-    console.log('subject: ', subject);
+    // console.log('subject: ', subject);
     const template = compile(rendering_template);
     const data = template(subject);
 
