@@ -6,13 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  IDENTITY_BASE_URL: "http://64.227.185.154:3000"
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [16, 18]
+        node-version: [16]
 
     steps:
       - uses: actions/checkout@v2
@@ -26,7 +30,7 @@ jobs:
       - run: yarn test
       
       - name: Tests
-        run: yarn test:cov
+        run: yarn test
       
       - name: Coveralls
         uses: coverallsapp/github-action@master

@@ -14,21 +14,26 @@ import { Verifiable, W3CCredential } from 'did-jwt-vc';
 import { IssueRequest, VCRequest, VCResponse } from './app.interface';
 import { AppService } from './app.service';
 
-@Controller('credentials')
+@Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
     private configService: ConfigService,
   ) {}
 
-  @ApiOperation({ summary: 'VC Claim' })
-  @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })
-  @ApiBody({ type: VCResponse })
-  @Post('claim')
-  @HttpCode(201)
-  claim(@Body() vcRequest: VCRequest): any {
-    return this.appService.claim(vcRequest);
+  @Get()
+  handleHealthCheck(): string {
+    return 'Hello World!';
   }
+
+  // @ApiOperation({ summary: 'VC Claim' })
+  // @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })
+  // @ApiBody({ type: VCResponse })
+  // @Post('claim')
+  // @HttpCode(201)
+  // claim(@Body() vcRequest: VCRequest): any {
+  //   return this.appService.claim(vcRequest);
+  // }
 
   @ApiOperation({ summary: 'Sign a claim' })
   @ApiResponse({ type: VCRequest, status: 201, description: 'Create a new VC' })
