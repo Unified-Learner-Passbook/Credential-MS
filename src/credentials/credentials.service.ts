@@ -210,18 +210,18 @@ export class CredentialsService {
 
       //SEQUENTIAL ID LOGIC
       //first credential entry if database is empty
-      if (
-        (await this.prisma.counter.findFirst({
-          where: { type_of_entity: 'Credential' },
-        })) == null
-      ) {
-        await this.prisma.counter.create({
-          data: {},
-        });
-      }
-      const seqID = await this.prisma.counter.findFirst({
-        where: { type_of_entity: 'Credential' },
-      });
+      // if (
+      //   (await this.prisma.counter.findFirst({
+      //     where: { type_of_entity: 'Credential' },
+      //   })) == null
+      // ) {
+      //   await this.prisma.counter.create({
+      //     data: {},
+      //   });
+      // }
+      // const seqID = await this.prisma.counter.findFirst({
+      //   where: { type_of_entity: 'Credential' },
+      // });
       // delete credInReq['id'];
       // const id = uuid();
       const id: AxiosResponse = await this.httpService.axiosRef.post(
@@ -268,10 +268,10 @@ export class CredentialsService {
       });
 
       //update counter only when credential has been created successfully
-      await this.prisma.counter.update({
-        where: { id: seqID.id },
-        data: { for_next_credential: seqID.for_next_credential + 1 },
-      });
+      // await this.prisma.counter.update({
+      //   where: { id: seqID.id },
+      //   data: { for_next_credential: seqID.for_next_credential + 1 },
+      // });
 
       const res = newCred.signed;
       delete res['options'];
