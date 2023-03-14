@@ -36,7 +36,10 @@ jobs:
         node-version: [16]
 
     steps:    
-      - uses: actions/checkout@v2
+      - name: Create .env
+        uses: actions/checkout@v2
+      - run: touch .env && echo "IDENTITY_BASE_URL="http://64.227.185.154:3000"\nDATABASE_URL"postgres://my_user:mypass@localhost:5432/credential?sslmode=disable""
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
