@@ -6,12 +6,22 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  IDENTITY_BASE_URL: "http://64.227.185.154:3000"
-
-
 jobs:
   build:
+    services:
+      postgres: 
+        image: postgres:latest
+        env:
+          POSTGRES_USER: my_user
+          POSTGRES_PASSWORD: my_pass
+          POSTGRES_DB: credential
+        ports:
+          - 5432/tcp
+    
+    env:
+      IDENTITY_BASE_URL: "http://64.227.185.154:3000"
+      DATABASE_URL: "postgres://my_user:mypass@localhost:5432/credential"
+
     runs-on: ubuntu-latest
 
     strategy:
@@ -26,11 +36,14 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
       - run: yarn install
+      - run: npx prisma migrate
       - run: yarn build
       - run: yarn test
       
       - name: Tests
         run: yarn test
+      - name: E2E Tests
+        run: yarn test:e2e
       
       - name: Coveralls
         uses: coverallsapp/github-action@master
