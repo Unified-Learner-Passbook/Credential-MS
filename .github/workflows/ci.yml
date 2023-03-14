@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  IDENTITY_BASE_URL: "http://64.227.185.154:3000"
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
