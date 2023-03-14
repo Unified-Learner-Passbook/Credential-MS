@@ -44,7 +44,7 @@ export class CredentialsService {
   ) {}
 
   async getCredentials(tags: string[]) {
-    console.log('tagsArray', tags);
+    // console.log('tagsArray', tags);
     const credentials = await this.prisma.vCV2.findMany({
       where: {
         tags: {
@@ -125,16 +125,16 @@ export class CredentialsService {
       );
 
       const did: DIDDocument = dIDResponse.data as DIDDocument;
-      console.log('did in verify: ', verify);
-      console.log('credToVerify:', credToVerify);
+      // console.log('did in verify: ', verify);
+      // console.log('credToVerify:', credToVerify);
 
       // VERIFYING THE JWS
       const verified = await ION.verifyJws({
         jws: credToVerify?.proof?.proofValue,
         publicJwk: did.verificationMethod[0].publicKeyJwk,
       });
-      console.debug(verified);
-      console.log('credToVerify: ', credToVerify);
+      // console.debug(verified);
+      // console.log('credToVerify: ', credToVerify);
       return {
         status: status,
         checks: [
@@ -175,7 +175,7 @@ export class CredentialsService {
   async issueCredential(issueRequest: IssueCredentialDTO) {
     try {
       const credInReq = issueRequest.credential;
-      console.log('credInReq: ', credInReq);
+      // console.log('credInReq: ', credInReq);
       /*
       //Code block for unsigned credential
 
@@ -245,7 +245,7 @@ export class CredentialsService {
           ],
         },
       );
-      console.log('id: ', id.data);
+      // console.log('id: ', id.data);
       credInReq.id = id.data[0]?.id;
 
       // TODO: add created by and updated by
@@ -307,8 +307,8 @@ export class CredentialsService {
     getCreds: GetCredentialsBySubjectOrIssuer,
   ) {
     try {
-      console.log('subject: ', getCreds.subject);
-      console.log('issuer: ', getCreds.issuer);
+      // console.log('subject: ', getCreds.subject);
+      // console.log('issuer: ', getCreds.issuer);
       // console.log('subjectId: ', getCreds.subjectId);
       const credentials = await this.prisma.vCV2.findMany({
         where: {
@@ -340,7 +340,7 @@ export class CredentialsService {
   }
 
   renderCredential(renderingRequest: RenderTemplateDTO) {
-    console.log('renderingReq\n', renderingRequest);
+    // console.log('renderingReq\n', renderingRequest);
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
     const credential: any = renderingRequest.credential;
