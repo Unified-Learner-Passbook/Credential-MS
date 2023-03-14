@@ -20,7 +20,7 @@ describe('CredentialsService', () => {
         'https://www.w3.org/2018/credentials/examples/v1',
       ],
       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-      issuer: 'did:ulp:f36bd94e-218f-477b-a5ab-6642c06cef5b',
+      issuer: 'did:ulp:76687f0a-e5bb-4176-86e1-28d5a76fdfa8',
       issuanceDate: '2023-02-06T11:56:27.259Z',
       expirationDate: '2023-02-08T11:56:27.259Z',
       credentialSubject: {
