@@ -242,7 +242,7 @@ export class CredentialsService {
     }
   }
 
-  renderCredential(renderingRequest: RenderTemplateDTO) {
+  async renderCredential(renderingRequest: RenderTemplateDTO) {
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
     const credential = renderingRequest.credential;
@@ -254,7 +254,9 @@ export class CredentialsService {
     delete subject.id;
     switch (output) {
       case RENDER_OUTPUT.QR:
-        // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
+        const QRData = await this.renderAsQR(credential);
+        console.log(QRData);
+        return QRData as string;
         break;
       case RENDER_OUTPUT.STRING:
         break;
@@ -286,15 +288,17 @@ export class CredentialsService {
   }
 
   // UTILITY FUNCTIONS
-  async renderAsQR(credentialId: string): Promise<any> {
-    const credential = await this.prisma.vC.findUnique({
-      where: { id: credentialId },
-    });
+  async renderAsQR(cred:VCV2): Promise<any> {
+    // const credential = await this.prisma.vCV2.findUnique({
+    //   where: { id: credentialId },
+    // });
 
     try {
+      // const QRData = await QRCode.toDataURL(
+      //   (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
+      // );
       const QRData = await QRCode.toDataURL(
-        (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
-      );
+        (JSON.stringify(cred.proof)));
       return QRData;
     } catch (err) {
       console.error(err);

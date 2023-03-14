@@ -71,7 +71,7 @@ export class CredentialsController {
   }
 
   @Post('render')
-  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) response):string | StreamableFile {
+  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) response) {
 
     let contentType = 'text/html'
     switch (renderRequest.output){
