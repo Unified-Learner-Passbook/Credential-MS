@@ -16,11 +16,18 @@ jobs:
           POSTGRES_PASSWORD: my_pass
           POSTGRES_DB: credential
         ports:
-          - 5432/tcp
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     
     env:
       IDENTITY_BASE_URL: "http://64.227.185.154:3000"
-      DATABASE_URL: "postgres://my_user:mypass@localhost:5432/credential"
+      DATABASE_URL: "postgres://my_user:mypass@localhost:5432/credential?sslmode=disable"
 
     runs-on: ubuntu-latest
 
@@ -28,7 +35,7 @@ jobs:
       matrix:
         node-version: [16]
 
-    steps:
+    steps:    
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
