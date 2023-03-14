@@ -27,7 +27,7 @@ jobs:
     
     env:
       IDENTITY_BASE_URL: "http://64.227.185.154:3000"
-      DATABASE_URL: "postgres://my_user:mypass@localhost:5432/credential?sslmode=disable"
+      DATABASE_URL: "postgres://my_user:my_pass@localhost:5432/credential?sslmode=disable"
 
     runs-on: ubuntu-latest
 
