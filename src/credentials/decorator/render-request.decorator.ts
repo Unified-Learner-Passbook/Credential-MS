@@ -1,8 +1,8 @@
-import { applyDecorators, Header } from "@nestjs/common";
-import { RENDER_OUTPUT } from "../enums/renderOutput.enum";
+import { applyDecorators, Header } from '@nestjs/common';
+import { RENDER_OUTPUT } from '../enums/renderOutput.enum';
 
 export function RenderRequestHeader(outputType: string) {
-    let contentType : string = 'text/html; charset=utf-8';
+    let contentType = 'text/html; charset=utf-8';
     switch (outputType) {
         case RENDER_OUTPUT.HTML:
             contentType = 'text/html; charset=utf-8';
@@ -10,13 +10,7 @@ export function RenderRequestHeader(outputType: string) {
         case RENDER_OUTPUT.PDF:
             contentType = 'application/pdf';
             break;
-
     }
 
-    return applyDecorators(
-        Header('Content-Type', contentType),
-    );
-
-
-
+    return applyDecorators(Header('Content-Type', contentType));
 }

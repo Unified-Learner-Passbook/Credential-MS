@@ -4,12 +4,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
-// import { IssuingService } from './issuing/issuing.service';
-// import { IssuingModule } from './issuing/issuing.module';
-// import { VerifyingModule } from './verifying/verifying.module';
 import { CredentialsModule } from './credentials/credentials.module';
-import { PresentationsModule } from './presentations/presentations.module';
-import { ExchangesModule } from './exchanges/exchanges.module';
+// import { PresentationsModule } from './presentations/presentations.module';
+// import { ExchangesModule } from './exchanges/exchanges.module';
 
 @Module({
   imports: [
@@ -18,8 +15,8 @@ import { ExchangesModule } from './exchanges/exchanges.module';
     // IssuingModule,
     // VerifyingModule,
     CredentialsModule,
-    PresentationsModule,
-    ExchangesModule,
+    // PresentationsModule,
+    // ExchangesModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService, PrismaService, /*IssuingService*/],
