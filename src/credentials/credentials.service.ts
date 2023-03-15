@@ -28,6 +28,7 @@ import { compile, template } from 'handlebars';
 import { join } from 'path';
 import * as wkhtmltopdf from 'wkhtmltopdf';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
+import { Proof } from 'src/app.interface';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
@@ -247,6 +248,8 @@ export class CredentialsService {
     const rendering_template = renderingRequest.template;
     const credential = renderingRequest.credential;
     const subject = JSON.parse(credential.subject);
+    
+    subject.qr = await this.renderAsQR(credential) ;
     console.log(subject);
     const template = compile(rendering_template);
     const data = template(subject);
@@ -261,6 +264,8 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
+        
+
         return new StreamableFile(
           wkhtmltopdf(data, {
             pageSize: 'A4',
