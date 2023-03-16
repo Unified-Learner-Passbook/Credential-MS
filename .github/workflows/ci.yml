@@ -8,24 +8,53 @@ on:
 
 jobs:
   build:
+    services:
+      postgres: 
+        image: postgres:latest
+        env:
+          POSTGRES_USER: my_user
+          POSTGRES_PASSWORD: my_pass
+          POSTGRES_DB: credential
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    
+    env:
+      IDENTITY_BASE_URL: "http://64.227.185.154:3000"
+      DATABASE_URL: "postgres://my_user:my_pass@localhost:5432/credential?sslmode=disable"
+
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [16, 18]
+        node-version: [16]
 
-    steps:
-      - uses: actions/checkout@v2
+    steps:    
+      - name: Create .env
+        uses: actions/checkout@v2
+      - run: touch .env && echo "IDENTITY_BASE_URL="http://64.227.185.154:3000"\nDATABASE_URL"postgres://my_user:mypass@localhost:5432/credential?sslmode=disable""
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
       - run: yarn install
+      - run: npx prisma migrate dev
       - run: yarn build
       - run: yarn test
       
-      - name: Tests
+      - name: Unit Tests
+        run: yarn test
+      - name: E2E Tests
+        run: yarn test:e2e
+      - name: Test Coverage
         run: yarn test:cov
       
       - name: Coveralls
