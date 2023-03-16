@@ -312,7 +312,7 @@ export class CredentialsService {
       // console.log('subjectId: ', getCreds.subjectId);
       const credentials = await this.prisma.vCV2.findMany({
         where: {
-          subject: JSON.stringify(getCreds.subject),
+          // subject: JSON.stringify(getCreds.subject),
           issuer: getCreds.issuer?.id,
           subjectId: getCreds.subject?.id,
         },
