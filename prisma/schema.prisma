@@ -48,6 +48,9 @@ model VCV2 {
   status            VCStatus       @default(ISSUED)
   created_at        DateTime       @default(now())
   updated_at        DateTime?      @default(now())
+  createdBy         String?
+  updatedBy         String?
+  tags              String[]
   Presentations     Presentations? @relation(fields: [presentationsId], references: [id])
   presentationsId   String?
 }
