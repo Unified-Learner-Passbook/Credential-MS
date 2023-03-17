@@ -69,7 +69,7 @@ export class CredentialsController {
   renderTemplate(
     @Body() renderRequest: RenderTemplateDTO,
     @Res({ passthrough: true }) response,
-  ): string | StreamableFile {
+  ): Promise<string | StreamableFile> {
     let contentType = 'text/html';
     switch (renderRequest.output) {
       case RENDER_OUTPUT.PDF:
@@ -83,5 +83,11 @@ export class CredentialsController {
     //response.contentType('appplication/pdf');
 
     return this.credentialsService.renderCredential(renderRequest);
+  }
+
+  // TODO: Remove later and merge into cred-schema-ms
+  @Get('schema/:id')
+  async getSchemaByCredId(@Param('id') id: string) {
+    return this.credentialsService.getSchemaByCredId(id);
   }
 }

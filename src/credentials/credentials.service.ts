@@ -339,22 +339,81 @@ export class CredentialsService {
     }
   }
 
-  renderCredential(renderingRequest: RenderTemplateDTO) {
-    // console.log('renderingReq\n', renderingRequest);
+  // renderCredential(renderingRequest: RenderTemplateDTO) {
+  //   // console.log('renderingReq\n', renderingRequest);
+  //   const output = renderingRequest.output;
+  //   const rendering_template = renderingRequest.template;
+  //   const credential: any = renderingRequest.credential;
+  //   // console.log(credential);
+  //   const subject = credential.credentialSubject;
+  //   // console.log('subject: ', subject);
+  //   const template = compile(rendering_template);
+  //   const data = template(subject);
+
+  //   delete subject.id;
+  //   switch (output) {
+  //     case RENDER_OUTPUT.QR:
+  //       // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
+  //       break;
+  //     case RENDER_OUTPUT.STRING:
+  //       break;
+  //     case RENDER_OUTPUT.PDF:
+  //       return new StreamableFile(
+  //         wkhtmltopdf(data, {
+  //           pageSize: 'A4',
+  //           disableExternalLinks: true,
+  //           disableInternalLinks: true,
+  //           disableJavascript: true,
+  //         }),
+  //       );
+
+  //     case RENDER_OUTPUT.QR_LINK:
+  //       return data;
+  //       break;
+  //     case RENDER_OUTPUT.HTML:
+  //       return data;
+  //       break;
+  //     case RENDER_OUTPUT.STRING:
+  //       break;
+  //     case RENDER_OUTPUT.JSON:
+  //       break;
+  //   }
+  // }
+
+  // // UTILITY FUNCTIONS
+  // // async renderAsQR(credentialId: string): Promise<any> {
+  // //   const credential = await this.prisma.vC.findUnique({
+  // //     where: { id: credentialId },
+  // //   });
+
+  // //   try {
+  // //     const QRData = await QRCode.toDataURL(
+  // //       (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
+  // //     );
+  // //     return QRData;
+  // //   } catch (err) {
+  // //     console.error(err);
+  // //     return err;
+  // //   }
+  // // }
+
+  async renderCredential(renderingRequest: RenderTemplateDTO) {
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
-    const credential: any = renderingRequest.credential;
-    // console.log(credential);
-    const subject = credential.credentialSubject;
-    // console.log('subject: ', subject);
+    const credential = renderingRequest.credential;
+    const subject = JSON.parse(credential.subject);
+
+    subject.qr = await this.renderAsQR(credential);
+    console.log(subject);
     const template = compile(rendering_template);
     const data = template(subject);
 
     delete subject.id;
     switch (output) {
       case RENDER_OUTPUT.QR:
-        // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
-        break;
+        const QRData = await this.renderAsQR(credential);
+        console.log(QRData);
+        return QRData as string;
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
@@ -381,19 +440,37 @@ export class CredentialsService {
   }
 
   // UTILITY FUNCTIONS
-  // async renderAsQR(credentialId: string): Promise<any> {
-  //   const credential = await this.prisma.vC.findUnique({
-  //     where: { id: credentialId },
-  //   });
+  async renderAsQR(cred: VCV2): Promise<any> {
+    // const credential = await this.prisma.vCV2.findUnique({
+    //   where: { id: credentialId },
+    // });
 
-  //   try {
-  //     const QRData = await QRCode.toDataURL(
-  //       (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
-  //     );
-  //     return QRData;
-  //   } catch (err) {
-  //     console.error(err);
-  //     return err;
-  //   }
-  // }
+    try {
+      // const QRData = await QRCode.toDataURL(
+      //   (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
+      // );
+      const QRData = await QRCode.toDataURL(JSON.stringify(cred.proof));
+      return QRData;
+    } catch (err) {
+      console.error(err);
+      return err;
+    }
+  }
+
+  async getSchemaByCredId(credId: string) {
+    try {
+      const schema = await this.prisma.vCV2.findUnique({
+        where: {
+          id: credId,
+        },
+        select: {
+          credential_schema: true,
+        },
+      });
+      return schema;
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
+  }
 }
