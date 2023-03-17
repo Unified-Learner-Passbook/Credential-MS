@@ -50,7 +50,7 @@ export class AppService {
 
   async signVC(credentialPlayload: JwtCredentialPayload, did: string) {
     //console.log(credentialPlayload);
-    did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+    // did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
     //console.log(process.env.IDENTITY_BASE_URL);
     console.time("Axios Resp");
     const signedVCResponse: AxiosResponse =
