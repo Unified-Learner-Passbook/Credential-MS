@@ -344,7 +344,7 @@ export class CredentialsService {
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
     const credential = renderingRequest.credential;
-    const subject = JSON.parse(credential.subject);
+    const subject = credential.credentialSubject as any;
 
     subject.qr = await this.renderAsQR(credential);
     console.log(subject);
@@ -361,14 +361,14 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        return new StreamableFile(
-          wkhtmltopdf(data, {
-            pageSize: 'A4',
-            disableExternalLinks: true,
-            disableInternalLinks: true,
-            disableJavascript: true,
-          }),
-        );
+        // return new StreamableFile(
+        return wkhtmltopdf(data, {
+          pageSize: 'A4',
+          disableExternalLinks: true,
+          disableInternalLinks: true,
+          disableJavascript: true,
+        });
+      // );
 
       case RENDER_OUTPUT.QR_LINK:
         return data;

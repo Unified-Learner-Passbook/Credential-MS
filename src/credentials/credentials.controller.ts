@@ -17,6 +17,7 @@ import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { UpdateStatusDTO } from './dto/update-status.dto';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { VerifyCredentialDTO } from './dto/verify-credential.dto';
+import { Response } from 'express';
 
 @Controller('credentials')
 export class CredentialsController {
@@ -66,9 +67,9 @@ export class CredentialsController {
   // }
 
   @Post('render')
-  renderTemplate(
+  async renderTemplate(
     @Body() renderRequest: RenderTemplateDTO,
-    @Res({ passthrough: true }) response,
+    @Res({ passthrough: true }) response: Response,
   ) {
     let contentType = 'text/html';
     switch (renderRequest.output) {
@@ -81,8 +82,9 @@ export class CredentialsController {
     }
     response.header('Content-Type', contentType);
     //response.contentType('appplication/pdf');
-
-    return this.credentialsService.renderCredential(renderRequest);
+    // const res = console.log('res: ', res);
+    // response.send(res);
+    return await this.credentialsService.renderCredential(renderRequest);
   }
 
   // TODO: Remove later and merge into cred-schema-ms
