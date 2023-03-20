@@ -29,6 +29,7 @@ import { compile, template } from 'handlebars';
 import { join } from 'path';
 import * as wkhtmltopdf from 'wkhtmltopdf';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
+import { Proof } from 'src/app.interface';
 import { VerifyCredentialResponse } from './dto/verify-response.dto';
 import { v4 as uuid } from 'uuid';
 
@@ -339,69 +340,11 @@ export class CredentialsService {
     }
   }
 
-  // renderCredential(renderingRequest: RenderTemplateDTO) {
-  //   // console.log('renderingReq\n', renderingRequest);
-  //   const output = renderingRequest.output;
-  //   const rendering_template = renderingRequest.template;
-  //   const credential: any = renderingRequest.credential;
-  //   // console.log(credential);
-  //   const subject = credential.credentialSubject;
-  //   // console.log('subject: ', subject);
-  //   const template = compile(rendering_template);
-  //   const data = template(subject);
-
-  //   delete subject.id;
-  //   switch (output) {
-  //     case RENDER_OUTPUT.QR:
-  //       // const QRData = await this.renderAsQR(renderingRequest.credentials.credentialId);
-  //       break;
-  //     case RENDER_OUTPUT.STRING:
-  //       break;
-  //     case RENDER_OUTPUT.PDF:
-  //       return new StreamableFile(
-  //         wkhtmltopdf(data, {
-  //           pageSize: 'A4',
-  //           disableExternalLinks: true,
-  //           disableInternalLinks: true,
-  //           disableJavascript: true,
-  //         }),
-  //       );
-
-  //     case RENDER_OUTPUT.QR_LINK:
-  //       return data;
-  //       break;
-  //     case RENDER_OUTPUT.HTML:
-  //       return data;
-  //       break;
-  //     case RENDER_OUTPUT.STRING:
-  //       break;
-  //     case RENDER_OUTPUT.JSON:
-  //       break;
-  //   }
-  // }
-
-  // // UTILITY FUNCTIONS
-  // // async renderAsQR(credentialId: string): Promise<any> {
-  // //   const credential = await this.prisma.vC.findUnique({
-  // //     where: { id: credentialId },
-  // //   });
-
-  // //   try {
-  // //     const QRData = await QRCode.toDataURL(
-  // //       (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
-  // //     );
-  // //     return QRData;
-  // //   } catch (err) {
-  // //     console.error(err);
-  // //     return err;
-  // //   }
-  // // }
-
   async renderCredential(renderingRequest: RenderTemplateDTO) {
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
     const credential = renderingRequest.credential;
-    const subject = JSON.parse(credential.subject);
+    const subject = credential.credentialSubject as any;
 
     subject.qr = await this.renderAsQR(credential);
     console.log(subject);
@@ -414,17 +357,18 @@ export class CredentialsService {
         const QRData = await this.renderAsQR(credential);
         console.log(QRData);
         return QRData as string;
+        break;
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        return new StreamableFile(
-          wkhtmltopdf(data, {
-            pageSize: 'A4',
-            disableExternalLinks: true,
-            disableInternalLinks: true,
-            disableJavascript: true,
-          }),
-        );
+        // return new StreamableFile(
+        return wkhtmltopdf(data, {
+          pageSize: 'A4',
+          disableExternalLinks: true,
+          disableInternalLinks: true,
+          disableJavascript: true,
+        });
+      // );
 
       case RENDER_OUTPUT.QR_LINK:
         return data;
