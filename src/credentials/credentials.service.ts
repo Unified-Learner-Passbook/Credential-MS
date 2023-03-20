@@ -345,8 +345,8 @@ export class CredentialsService {
     const rendering_template = renderingRequest.template;
     const credential = renderingRequest.credential;
     const subject = JSON.parse(credential.subject);
-    
-    subject.qr = await this.renderAsQR(credential) ;
+
+    subject.qr = await this.renderAsQR(credential);
     console.log(subject);
     const template = compile(rendering_template);
     const data = template(subject);
@@ -361,8 +361,6 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        
-
         return new StreamableFile(
           wkhtmltopdf(data, {
             pageSize: 'A4',
@@ -386,7 +384,7 @@ export class CredentialsService {
   }
 
   // UTILITY FUNCTIONS
-  async renderAsQR(cred:VCV2): Promise<any> {
+  async renderAsQR(cred: VCV2): Promise<any> {
     // const credential = await this.prisma.vCV2.findUnique({
     //   where: { id: credentialId },
     // });
@@ -395,12 +393,28 @@ export class CredentialsService {
       // const QRData = await QRCode.toDataURL(
       //   (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
       // );
-      const QRData = await QRCode.toDataURL(
-        (JSON.stringify(cred.proof)));
+      const QRData = await QRCode.toDataURL(JSON.stringify(cred.proof));
       return QRData;
     } catch (err) {
       console.error(err);
       return err;
+    }
+  }
+
+  async getSchemaByCredId(credId: string) {
+    try {
+      const schema = await this.prisma.vCV2.findUnique({
+        where: {
+          id: credId,
+        },
+        select: {
+          credential_schema: true,
+        },
+      });
+      return schema;
+    } catch (e) {
+      console.log(e);
+      throw e;
     }
   }
 }

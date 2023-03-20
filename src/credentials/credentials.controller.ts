@@ -66,11 +66,12 @@ export class CredentialsController {
   // }
 
   @Post('render')
-  renderTemplate(@Body() renderRequest: RenderTemplateDTO, @Res({passthrough:true}) response) {
-
-    let contentType = 'text/html'
-    switch (renderRequest.output){
-
+  renderTemplate(
+    @Body() renderRequest: RenderTemplateDTO,
+    @Res({ passthrough: true }) response,
+  ) {
+    let contentType = 'text/html';
+    switch (renderRequest.output) {
       case RENDER_OUTPUT.PDF:
         contentType = 'application/pdf';
         break;
@@ -82,5 +83,11 @@ export class CredentialsController {
     //response.contentType('appplication/pdf');
 
     return this.credentialsService.renderCredential(renderRequest);
+  }
+
+  // TODO: Remove later and merge into cred-schema-ms
+  @Get('schema/:id')
+  async getSchemaByCredId(@Param('id') id: string) {
+    return this.credentialsService.getSchemaByCredId(id);
   }
 }
