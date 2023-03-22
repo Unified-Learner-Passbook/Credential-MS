@@ -4,6 +4,7 @@ node() {
             parameters([
                 string(name: 'docker_repo', defaultValue: 'samagragovernance/credential-ms', description: 'Docker Image Name'),
                 string(name: 'docker_server', defaultValue: "$docker_server", description: 'Docker Registry URL'),
+                
             ])
         ])
     }
