@@ -367,6 +367,7 @@ export class CredentialsService {
           disableExternalLinks: true,
           disableInternalLinks: true,
           disableJavascript: true,
+          encoding: 'UTF-8',
         });
       // );
 
