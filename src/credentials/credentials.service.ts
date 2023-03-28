@@ -246,6 +246,7 @@ export class CredentialsService {
           ],
         },
       );
+
       // console.log('id: ', id.data);
       credInReq.id = id.data[0]?.id;
 
@@ -311,11 +312,22 @@ export class CredentialsService {
       // console.log('subject: ', getCreds.subject);
       // console.log('issuer: ', getCreds.issuer);
       // console.log('subjectId: ', getCreds.subjectId);
+      const stringifiedSubject = JSON.stringify(getCreds.subject);
+      console.log(
+        'JSON.stringify(getCreds.subject).substring(1, -1): ',
+        stringifiedSubject.substring(1, stringifiedSubject.length - 2),
+      );
       const credentials = await this.prisma.vCV2.findMany({
         where: {
           // subject: JSON.stringify(getCreds.subject),
           issuer: getCreds.issuer?.id,
-          subjectId: getCreds.subject?.id,
+          // subjectId: getCreds.subject?.id,
+          subject: {
+            contains: stringifiedSubject.substring(
+              1,
+              stringifiedSubject.length - 2,
+            ),
+          },
         },
         select: {
           id: true,
