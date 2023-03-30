@@ -352,7 +352,6 @@ export class CredentialsService {
     const rendering_template = renderingRequest.template;
     const credential = renderingRequest.credential;
     const subject = credential.credentialSubject as any;
-
     subject.qr = await this.renderAsQR(credential);
     console.log(subject);
     const template = compile(rendering_template);
@@ -401,7 +400,7 @@ export class CredentialsService {
       // const QRData = await QRCode.toDataURL(
       //   (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
       // );
-      const QRData = await QRCode.toDataURL(JSON.stringify(cred.proof));
+      const QRData = await QRCode.toDataURL(JSON.stringify(cred));
       return QRData;
     } catch (err) {
       console.error(err);
