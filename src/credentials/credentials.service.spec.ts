@@ -145,7 +145,7 @@ describe('CredentialsService', () => {
         'https://www.w3.org/2018/credentials/examples/v1',
       ],
       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-      issuer: 'did:ulp:76687f0a-e5bb-4176-86e1-28d5a76fdfa8',
+      issuer: 'did:ulp:705a7f13-da2e-4305-a1ca-ac8e750e9ada',
       issuanceDate: '2023-02-06T11:56:27.259Z',
       expirationDate: '2023-02-08T11:56:27.259Z',
       credentialSubject: {
@@ -364,6 +364,7 @@ describe('CredentialsService', () => {
   it('should return array of creds based on issuer', async () => {
     try {
       const newCred = await service.issueCredential(sampleCredReqPayload);
+      console.log('newCred: ', (newCred.credential as any)?.issuer);
       expect(
         await service.getCredentialsBySubjectOrIssuer({
           issuer: {

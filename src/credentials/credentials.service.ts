@@ -16,7 +16,7 @@ import {
   W3CCredential,
 } from 'did-jwt-vc';
 import { DIDDocument } from 'did-resolver';
-import { lastValueFrom, map } from 'rxjs';
+import { filter, lastValueFrom, map } from 'rxjs';
 import { PrismaService } from '../prisma.service';
 import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
@@ -260,7 +260,7 @@ export class CredentialsService {
           issuer: credInReq.issuer as string,
           issuanceDate: credInReq.issuanceDate,
           expirationDate: credInReq.expirationDate,
-          subject: JSON.stringify(credInReq.credentialSubject),
+          subject: credInReq.credentialSubject as any,
           subjectId: (credInReq.credentialSubject as any).id,
           proof: credInReq.proof as any,
           credential_schema: issueRequest.credentialSchemaId, //because they can't refer to the schema db from here through an ID
@@ -312,17 +312,29 @@ export class CredentialsService {
       // console.log('subject: ', getCreds.subject);
       // console.log('issuer: ', getCreds.issuer);
       // console.log('subjectId: ', getCreds.subjectId);
-      const stringifiedSubject = JSON.stringify(getCreds.subject);
+      // console.log('filter: ', getCreds.subject);
+      const filteringSubject = getCreds.subject;
+
+      // const stringifiedSubject = JSON.stringify(getCreds.subject);
       const credentials = await this.prisma.vCV2.findMany({
         where: {
-          // subject: JSON.stringify(getCreds.subject),
           issuer: getCreds.issuer?.id,
+          AND: filteringSubject
+            ? Object.keys(filteringSubject).map((key) => ({
+              subject: {
+                path: [key.toString()],
+                equals: filteringSubject[key],
+              },
+            }))
+            : [],
+          // subject: JSON.stringify(getCreds.subject),
+          // issuer: getCreds.issuer?.id,
           // subjectId: getCreds.subject?.id,
-          subject: {
-            contains: stringifiedSubject
-              ? stringifiedSubject.substring(1, stringifiedSubject.length - 2)
-              : '',
-          },
+          // subject: {
+          // contains: stringifiedSubject
+          // ? stringifiedSubject.substring(1, stringifiedSubject.length - 2)
+          // : '',
+          // },
         },
         select: {
           id: true,
