@@ -412,7 +412,8 @@ export class CredentialsService {
       // const QRData = await QRCode.toDataURL(
       //   (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
       // );
-      const QRData = await QRCode.toDataURL(JSON.stringify(cred));
+      const verificationURL = `http://64.227.185.154:3002/credentials/${cred.id}/verify`;
+      const QRData = await QRCode.toDataURL(verificationURL);
       return QRData;
     } catch (err) {
       console.error(err);

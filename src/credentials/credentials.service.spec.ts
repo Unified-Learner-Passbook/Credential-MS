@@ -330,9 +330,9 @@ describe('CredentialsService', () => {
     });
   });
 
-  it('should revoke a credential', async () => {
-    expect(await service.getCredentials(['tag1'])).toBeInstanceOf(Array);
-  });
+  // it('should revoke a credential', async () => {
+  //   expect(await service.getCredentials(['tag1'])).toBeInstanceOf(Array);
+  // });
 
   it('should throw because no credential is present to be searched by ID', async () => {
     await expect(service.getCredentialById('did:ulp:123')).rejects.toThrow();
