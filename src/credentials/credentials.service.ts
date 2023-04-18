@@ -266,7 +266,7 @@ export class CredentialsService {
   async renderCredential(renderingRequest: RenderTemplateDTO) {
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
-    const credential = renderingRequest.credential;
+    const credential = renderingRequest.credential as W3CCredential;
     const subject = credential.credentialSubject as any;
     subject.qr = await this.renderAsQR(credential);
     console.log(subject);
@@ -305,7 +305,7 @@ export class CredentialsService {
   }
 
   // UTILITY FUNCTIONS
-  async renderAsQR(cred: VCV2) {
+  async renderAsQR(cred: W3CCredential) {
     // const credential = await this.prisma.vCV2.findUnique({
     //   where: { id: credentialId },
     // });
