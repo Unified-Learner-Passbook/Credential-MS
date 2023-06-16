@@ -1,11 +1,12 @@
 import { HttpService } from '@nestjs/axios';
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
-import { VCStatus, VCV2 } from '@prisma/client';
+import { VCStatus } from '@prisma/client';
 import {
   JwtCredentialPayload,
   CredentialPayload,
@@ -23,6 +24,7 @@ import { compile } from 'handlebars';
 import * as wkhtmltopdf from 'wkhtmltopdf';
 import { IssuerType, Proof } from 'did-jwt-vc/lib/types';
 import { JwtCredentialSubject } from 'src/app.interface';
+import Ajv2019 from 'ajv/dist/2019';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
@@ -37,7 +39,7 @@ export class CredentialsService {
   ) {}
 
   async getCredentials(tags: ReadonlyArray<string>) {
-    const credentials = await this.prisma.vCV2.findMany({
+    const credentials = await this.prisma.verifiableCredential.findMany({
       where: {
         tags: {
           hasSome: [...tags],
@@ -48,7 +50,7 @@ export class CredentialsService {
   }
 
   async getCredentialById(id: string) {
-    const credential = await this.prisma.vCV2.findUnique({
+    const credential = await this.prisma.verifiableCredential.findUnique({
       where: { id: id },
       select: {
         signed: true,
@@ -61,15 +63,14 @@ export class CredentialsService {
     // formatting the response as per the spec
     const res = credential.signed;
     delete res['options'];
-    delete res['proof'];
     res['id'] = id;
     return res;
   }
 
   async verifyCredential(credId: string) {
     // getting the credential from the db
-    const { signed: credToVerify, status } = (await this.prisma.vCV2.findUnique(
-      {
+    const { signed: credToVerify, status } =
+      (await this.prisma.verifiableCredential.findUnique({
         where: {
           id: credId,
         },
@@ -77,8 +78,7 @@ export class CredentialsService {
           signed: true,
           status: true,
         },
-      },
-    )) as { signed: Verifiable<W3CCredential>; status: VCStatus };
+      })) as { signed: Verifiable<W3CCredential>; status: VCStatus };
 
     // invalid request in case credential is not found
     if (!credToVerify) {
@@ -139,6 +139,21 @@ export class CredentialsService {
       const credInReq = issueRequest.credential;
 
       // TODO: Verify the credential with the credential schema using ajv
+      // get the credential schema
+      const credSchema: AxiosResponse = await this.httpService.axiosRef.get(
+        `${process.env.SCHEMA_BASE_URL}/schema/jsonld?id=${issueRequest.credentialSchemaId}`,
+      );
+      const schema = credSchema?.data?.schema; //['$schema'];
+      console.log('schema', schema);
+      const ajv = new Ajv2019();
+      ajv.addFormat('custom-date-time', function (dateTimeString) {
+        return typeof dateTimeString === typeof new Date();
+      });
+      const validate = ajv.compile(schema);
+      const valid = validate(credInReq?.credentialSubject);
+
+      if (!valid) throw new BadRequestException(validate.errors);
+
       credInReq['proof'] = {
         proofValue: await this.signVC(
           transformCredentialInput(credInReq as CredentialPayload),
@@ -175,7 +190,7 @@ export class CredentialsService {
       credInReq.id = id.data[0]?.id;
 
       // TODO: add created by and updated by
-      const newCred = await this.prisma.vCV2.create({
+      const newCred = await this.prisma.verifiableCredential.create({
         data: {
           id: credInReq.id,
           type: credInReq.type,
@@ -203,13 +218,14 @@ export class CredentialsService {
         tags: newCred.tags,
       };
     } catch (err) {
+      console.log('err: ', err);
       throw new InternalServerErrorException(err);
     }
   }
 
   async deleteCredential(id: string) {
     try {
-      const credential = await this.prisma.vCV2.update({
+      const credential = await this.prisma.verifiableCredential.update({
         where: { id: id },
         data: {
           status: 'REVOKED',
@@ -227,7 +243,7 @@ export class CredentialsService {
     try {
       const filteringSubject = getCreds.subject;
 
-      const credentials = await this.prisma.vCV2.findMany({
+      const credentials = await this.prisma.verifiableCredential.findMany({
         where: {
           issuer: getCreds.issuer?.id,
           AND: filteringSubject
@@ -306,14 +322,7 @@ export class CredentialsService {
 
   // UTILITY FUNCTIONS
   async renderAsQR(cred: W3CCredential) {
-    // const credential = await this.prisma.vCV2.findUnique({
-    //   where: { id: credentialId },
-    // });
-
     try {
-      // const QRData = await QRCode.toDataURL(
-      //   (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
-      // );
       const verificationURL = `http://64.227.185.154:3002/credentials/${cred.id}/verify`;
       const QRData = await QRCode.toDataURL(verificationURL);
       return QRData;
@@ -325,7 +334,7 @@ export class CredentialsService {
 
   async getSchemaByCredId(credId: string) {
     try {
-      const schema = await this.prisma.vCV2.findUnique({
+      const schema = await this.prisma.verifiableCredential.findUnique({
         where: {
           id: credId,
         },

@@ -14,11 +14,23 @@ import { IssueCredentialDTO } from './dto/issue-credential.dto';
 import { RenderTemplateDTO } from './dto/renderTemplate.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 import { Response } from 'express';
+import { ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { string } from 'zod';
 
 @Controller('credentials')
 export class CredentialsController {
   constructor(private readonly credentialsService: CredentialsService) {}
 
+  @ApiTags('Issuing')
+  @ApiQuery({
+    name: 'tags',
+    description: 'A comma separated string of tags to filter by',
+    type: string,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successful operation',
+  })
   @Get()
   getCredentials(@Query('tags') tags: string) {
     return this.credentialsService.getCredentials(tags.split(','));
