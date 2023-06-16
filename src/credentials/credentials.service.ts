@@ -24,7 +24,7 @@ import { compile } from 'handlebars';
 import * as wkhtmltopdf from 'wkhtmltopdf';
 import { IssuerType, Proof } from 'did-jwt-vc/lib/types';
 import { JwtCredentialSubject } from 'src/app.interface';
-import Ajv2019 from 'ajv/dist/2019';
+import { getCredentialSchema, verifyCredentialSubject } from './schema.utils';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
@@ -140,31 +140,14 @@ export class CredentialsService {
 
       // TODO: Verify the credential with the credential schema using ajv
       // get the credential schema
-      const credSchema: AxiosResponse = await this.httpService.axiosRef.get(
-        `${process.env.SCHEMA_BASE_URL}/schema/jsonld?id=${issueRequest.credentialSchemaId}`,
+      const schema = await getCredentialSchema(
+        issueRequest.credentialSchemaId,
+        this.httpService,
       );
-      const schema = credSchema?.data?.schema; //['$schema'];
-      console.log('schema', schema);
-      const ajv = new Ajv2019();
-      ajv.addFormat('custom-date-time', function (dateTimeString) {
-        return typeof dateTimeString === typeof new Date();
-      });
-      const validate = ajv.compile(schema);
-      const valid = validate(credInReq?.credentialSubject);
+      const { valid, errors } = verifyCredentialSubject(credInReq, schema);
+      if (!valid) throw new BadRequestException(errors);
 
-      if (!valid) throw new BadRequestException(validate.errors);
-
-      credInReq['proof'] = {
-        proofValue: await this.signVC(
-          transformCredentialInput(credInReq as CredentialPayload),
-          credInReq.issuer,
-        ),
-        type: 'Ed25519Signature2020',
-        created: new Date().toISOString(),
-        verificationMethod: credInReq.issuer,
-        proofPurpose: 'assertionMethod',
-      };
-
+      // generate the DID for credential
       const id: AxiosResponse = await this.httpService.axiosRef.post(
         `${process.env.IDENTITY_BASE_URL}/did/generate`,
         {
@@ -188,6 +171,18 @@ export class CredentialsService {
       );
 
       credInReq.id = id.data[0]?.id;
+
+      // sign the credential
+      credInReq['proof'] = {
+        proofValue: await this.signVC(
+          transformCredentialInput(credInReq as CredentialPayload),
+          credInReq.issuer,
+        ),
+        type: 'Ed25519Signature2020',
+        created: new Date().toISOString(),
+        verificationMethod: credInReq.issuer,
+        proofPurpose: 'assertionMethod',
+      };
 
       // TODO: add created by and updated by
       const newCred = await this.prisma.verifiableCredential.create({
