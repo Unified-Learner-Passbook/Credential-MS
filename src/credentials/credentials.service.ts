@@ -242,6 +242,7 @@ export class CredentialsService {
                   },
                 },
               ],
+              method: (credInReq && credInReq.id && (credInReq.id as string).trim() !== '') ? credInReq.id : 'rcw'
             },
           ],
         },
