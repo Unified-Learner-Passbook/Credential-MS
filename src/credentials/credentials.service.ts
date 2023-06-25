@@ -165,6 +165,7 @@ export class CredentialsService {
                   },
                 },
               ],
+              method: 'C4GT',
             },
           ],
         },

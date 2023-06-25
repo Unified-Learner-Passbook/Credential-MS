@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:16.20.0
 #This installs the necessary libs to have wkhtmltopdf tool work
 RUN apt-get update \
     && apt-get install -y wkhtmltopdf \
@@ -45,7 +45,7 @@ RUN apt-get install -y \
     xdg-utils
 
 WORKDIR /app
-COPY package.json ./
+COPY package.json yarn.lock ./
 RUN yarn
 COPY . ./
 EXPOSE 3333
