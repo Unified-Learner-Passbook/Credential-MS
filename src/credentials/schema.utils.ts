@@ -9,7 +9,7 @@ export const getCredentialSchema = async (
 ) => {
   try {
     const credSchema: AxiosResponse = await httpService.axiosRef.get(
-      `${process.env.SCHEMA_BASE_URL}/schema/jsonld?id=${schemaId}`,
+      `${process.env.SCHEMA_BASE_URL}/credential-schema/${schemaId}`,
     );
     return credSchema?.data?.schema;
   } catch (err) {

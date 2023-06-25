@@ -39,7 +39,7 @@ export class CredentialsService {
   ) {}
 
   async getCredentials(tags: ReadonlyArray<string>) {
-    const credentials = await this.prisma.verifiableCredential.findMany({
+    const credentials = await this.prisma.verifiableCredentials.findMany({
       where: {
         tags: {
           hasSome: [...tags],
@@ -50,7 +50,7 @@ export class CredentialsService {
   }
 
   async getCredentialById(id: string) {
-    const credential = await this.prisma.verifiableCredential.findUnique({
+    const credential = await this.prisma.verifiableCredentials.findUnique({
       where: { id: id },
       select: {
         signed: true,
@@ -70,7 +70,7 @@ export class CredentialsService {
   async verifyCredential(credId: string) {
     // getting the credential from the db
     const { signed: credToVerify, status } =
-      (await this.prisma.verifiableCredential.findUnique({
+      (await this.prisma.verifiableCredentials.findUnique({
         where: {
           id: credId,
         },
@@ -140,12 +140,12 @@ export class CredentialsService {
 
       // TODO: Verify the credential with the credential schema using ajv
       // get the credential schema
-      const schema = await getCredentialSchema(
-        issueRequest.credentialSchemaId,
-        this.httpService,
-      );
-      const { valid, errors } = verifyCredentialSubject(credInReq, schema);
-      if (!valid) throw new BadRequestException(errors);
+      // const schema = await getCredentialSchema(
+      //   issueRequest.credentialSchemaId,
+      //   this.httpService,
+      // );
+      // const { valid, errors } = verifyCredentialSubject(credInReq, schema);
+      // if (!valid) throw new BadRequestException(errors);
 
       // generate the DID for credential
       const id: AxiosResponse = await this.httpService.axiosRef.post(
@@ -153,7 +153,7 @@ export class CredentialsService {
         {
           content: [
             {
-              alsoKnownAs: ['did.chinmoy12c@gmail.com.chinmoytest'],
+              alsoKnownAs: ['verifiable credential'],
               services: [
                 {
                   id: 'IdentityHub',
@@ -185,7 +185,7 @@ export class CredentialsService {
       };
 
       // TODO: add created by and updated by
-      const newCred = await this.prisma.verifiableCredential.create({
+      const newCred = await this.prisma.verifiableCredentials.create({
         data: {
           id: credInReq.id,
           type: credInReq.type,
@@ -220,7 +220,7 @@ export class CredentialsService {
 
   async deleteCredential(id: string) {
     try {
-      const credential = await this.prisma.verifiableCredential.update({
+      const credential = await this.prisma.verifiableCredentials.update({
         where: { id: id },
         data: {
           status: 'REVOKED',
@@ -238,7 +238,7 @@ export class CredentialsService {
     try {
       const filteringSubject = getCreds.subject;
 
-      const credentials = await this.prisma.verifiableCredential.findMany({
+      const credentials = await this.prisma.verifiableCredentials.findMany({
         where: {
           issuer: getCreds.issuer?.id,
           AND: filteringSubject
@@ -304,10 +304,8 @@ export class CredentialsService {
 
       case RENDER_OUTPUT.QR_LINK:
         return data;
-        break;
       case RENDER_OUTPUT.HTML:
         return data;
-        break;
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.JSON:
@@ -329,7 +327,7 @@ export class CredentialsService {
 
   async getSchemaByCredId(credId: string) {
     try {
-      const schema = await this.prisma.verifiableCredential.findUnique({
+      const schema = await this.prisma.verifiableCredentials.findUnique({
         where: {
           id: credId,
         },

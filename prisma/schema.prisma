@@ -18,13 +18,12 @@ enum VCStatus {
   REVOKED
 }
 
-model VerifiableCredential {
+model VerifiableCredentials {
   id                String    @id @default(uuid())
   type              String[]
   issuer            String
   issuanceDate      String
   expirationDate    String
-  // subject         Json (as per the VC doc this is JSON)
   credential_schema String
   subject           Json
   subjectId         String
