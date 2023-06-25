@@ -1,13 +1,12 @@
 import { HttpService } from '@nestjs/axios';
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  StreamableFile,
 } from '@nestjs/common';
 import { AxiosResponse } from '@nestjs/terminus/dist/health-indicator/http/axios.interfaces';
-import { VCStatus, VCV2 } from '@prisma/client';
-import { verify } from 'crypto';
+import { VCStatus } from '@prisma/client';
 import {
   JwtCredentialPayload,
   CredentialPayload,
@@ -16,27 +15,22 @@ import {
   W3CCredential,
 } from 'did-jwt-vc';
 import { DIDDocument } from 'did-resolver';
-import { filter, lastValueFrom, map } from 'rxjs';
 import { PrismaService } from '../prisma.service';
-import { DeriveCredentialDTO } from './dto/derive-credential.dto';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
 import { IssueCredentialDTO } from './dto/issue-credential.dto';
 import { RenderTemplateDTO } from './dto/renderTemplate.dto';
-import { UpdateStatusDTO } from './dto/update-status.dto';
-import { VerifyCredentialDTO } from './dto/verify-credential.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
-import { compile, template } from 'handlebars';
-import { join } from 'path';
+import { compile } from 'handlebars';
 import * as wkhtmltopdf from 'wkhtmltopdf';
-import { existsSync, readFileSync, unlinkSync } from 'fs';
-import { Proof } from 'src/app.interface';
-import { VerifyCredentialResponse } from './dto/verify-response.dto';
-import { v4 as uuid } from 'uuid';
+import { IssuerType, Proof } from 'did-jwt-vc/lib/types';
+import { JwtCredentialSubject } from 'src/app.interface';
+import { getCredentialSchema, verifyCredentialSubject } from './schema.utils';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QRCode = require('qrcode');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ION = require('@decentralized-identity/ion-tools');
+
 @Injectable()
 export class CredentialsService {
   constructor(
@@ -44,9 +38,8 @@ export class CredentialsService {
     private readonly httpService: HttpService,
   ) {}
 
-  async getCredentials(tags: string[]) {
-    // console.log('tagsArray', tags);
-    const credentials = await this.prisma.vCV2.findMany({
+  async getCredentials(tags: ReadonlyArray<string>) {
+    const credentials = await this.prisma.verifiableCredentials.findMany({
       where: {
         tags: {
           hasSome: [...tags],
@@ -57,7 +50,7 @@ export class CredentialsService {
   }
 
   async getCredentialById(id: string) {
-    const credential = await this.prisma.vCV2.findUnique({
+    const credential = await this.prisma.verifiableCredentials.findUnique({
       where: { id: id },
       select: {
         signed: true,
@@ -67,80 +60,51 @@ export class CredentialsService {
     if (!credential)
       throw new NotFoundException('Credential for the given id not found');
 
+    // formatting the response as per the spec
     const res = credential.signed;
     delete res['options'];
-    delete res['proof'];
     res['id'] = id;
     return res;
   }
 
   async verifyCredential(credId: string) {
-    let credToVerify: any = null;
-    credToVerify = await this.prisma.vCV2.findUnique({
-      where: {
-        id: credId,
-      },
-    });
+    // getting the credential from the db
+    const { signed: credToVerify, status } =
+      (await this.prisma.verifiableCredentials.findUnique({
+        where: {
+          id: credId,
+        },
+        select: {
+          signed: true,
+          status: true,
+        },
+      })) as { signed: Verifiable<W3CCredential>; status: VCStatus };
 
     // invalid request in case credential is not found
     if (!credToVerify) {
       throw new NotFoundException({ errors: ['Credential not found'] });
-      // return {
-      //   errors: ['Credential not found'],
-      // };
     }
     try {
-      // getting the cred from db
-
-      // no need to verify in case the credential is revoked ? or do I resolve the JWKS anyway
-      /*if (credToVerify.status === VCStatus.REVOKED)
-        return {
-          status: 'revoked',
-          checks: [{ revoked: 'OK' }],
-        };
-
-      console.log('expiration date: ', credToVerify.expirationDate);
-      console.log(
-        'credToVerify.expirationDate < new Date(): ',
-        credToVerify.expirationDate < new Date(),
-      );
-      if (new Date(credToVerify.expirationDate).getTime() < Date.now())
-        return {
-          status: 'expired',
-          checks: [{ revoked: 'OK', expired: 'OK' }],
-        };*/
-
-      const status = credToVerify.status;
-      credToVerify = credToVerify.signed;
-      delete credToVerify['options'];
-
-      console.log(
-        'process.env.IDENTIY_BASE_URL: ',
-        process.env.IDENTITY_BASE_URL,
-      );
+      // calling identity service to verify the credential
       const verificationMethod = credToVerify.issuer;
       const verificationURL = `${process.env.IDENTITY_BASE_URL}/did/resolve/${verificationMethod}`;
-      console.log('verificationURL: ', verificationURL);
       const dIDResponse: AxiosResponse = await this.httpService.axiosRef.get(
         verificationURL,
       );
 
       const did: DIDDocument = dIDResponse.data as DIDDocument;
-      // console.log('did in verify: ', verify);
-      // console.log('credToVerify:', credToVerify);
 
       // VERIFYING THE JWS
-      const verified = await ION.verifyJws({
+      await ION.verifyJws({
         jws: credToVerify?.proof?.proofValue,
         publicJwk: did.verificationMethod[0].publicKeyJwk,
       });
-      // console.debug(verified);
-      // console.log('credToVerify: ', credToVerify);
+
       return {
         status: status,
         checks: [
           {
-            active: 'OK', // not sure what this means
+            active: 'OK',
             revoked: status === VCStatus.REVOKED ? 'NOK' : 'OK', // NOK represents revoked
             expired:
               new Date(credToVerify.expirationDate).getTime() < Date.now()
@@ -158,10 +122,7 @@ export class CredentialsService {
     }
   }
 
-  async signVC(credentialPlayload: JwtCredentialPayload, did: string) {
-    // console.log('credentialPlayload: ', credentialPlayload);
-    // console.log('did: ', did);
-    // did = 'did:ulp:5d7682f4-3cca-40fb-9fa2-1f6ebef4803b';
+  async signVC(credentialPlayload: JwtCredentialPayload, did: IssuerType) {
     const signedVCResponse: AxiosResponse =
       await this.httpService.axiosRef.post(
         `${process.env.IDENTITY_BASE_URL}/utils/sign`,
@@ -176,61 +137,23 @@ export class CredentialsService {
   async issueCredential(issueRequest: IssueCredentialDTO) {
     try {
       const credInReq = issueRequest.credential;
-      // console.log('credInReq: ', credInReq);
-      /*
-      //Code block for unsigned credential
-
-      return await this.prisma.vCV2.create({ //use update incase the above codeblock is uncommented 
-        data: {
-          type: credInReq.type,
-          issuer: credInReq.issuer as string,
-          issuanceDate: credInReq.issuanceDate,
-          expirationDate: credInReq.expirationDate,
-          subject: JSON.stringify(credInReq.credentialSubject),
-          //proof: credInReq.proof as any,
-          credential_schema: JSON.stringify(issueRequest.credentialSchema), //because they can't refer to the schema db from here through an ID
-          unsigned: credInReq as object,
-        },
-
-      */
 
       // TODO: Verify the credential with the credential schema using ajv
+      // get the credential schema
+      // const schema = await getCredentialSchema(
+      //   issueRequest.credentialSchemaId,
+      //   this.httpService,
+      // );
+      // const { valid, errors } = verifyCredentialSubject(credInReq, schema);
+      // if (!valid) throw new BadRequestException(errors);
 
-      credInReq['proof'] = {
-        proofValue: await this.signVC(
-          transformCredentialInput(credInReq as CredentialPayload),
-          credInReq.issuer as string,
-        ),
-        type: 'Ed25519Signature2020',
-        created: new Date().toISOString(),
-        verificationMethod: credInReq.issuer,
-        proofPurpose: 'assertionMethod',
-      };
-      console.timeEnd('Sign');
-      //console.log('onto creation');
-
-      //SEQUENTIAL ID LOGIC
-      //first credential entry if database is empty
-      // if (
-      //   (await this.prisma.counter.findFirst({
-      //     where: { type_of_entity: 'Credential' },
-      //   })) == null
-      // ) {
-      //   await this.prisma.counter.create({
-      //     data: {},
-      //   });
-      // }
-      // const seqID = await this.prisma.counter.findFirst({
-      //   where: { type_of_entity: 'Credential' },
-      // });
-      // delete credInReq['id'];
-      // const id = uuid();
+      // generate the DID for credential
       const id: AxiosResponse = await this.httpService.axiosRef.post(
         `${process.env.IDENTITY_BASE_URL}/did/generate`,
         {
           content: [
             {
-              alsoKnownAs: ['did.chinmoy12c@gmail.com.chinmoytest'],
+              alsoKnownAs: ['verifiable credential'],
               services: [
                 {
                   id: 'IdentityHub',
@@ -248,33 +171,36 @@ export class CredentialsService {
         },
       );
 
-      // console.log('id: ', id.data);
       credInReq.id = id.data[0]?.id;
 
+      // sign the credential
+      credInReq['proof'] = {
+        proofValue: await this.signVC(
+          transformCredentialInput(credInReq as CredentialPayload),
+          credInReq.issuer,
+        ),
+        type: 'Ed25519Signature2020',
+        created: new Date().toISOString(),
+        verificationMethod: credInReq.issuer,
+        proofPurpose: 'assertionMethod',
+      };
+
       // TODO: add created by and updated by
-      const newCred = await this.prisma.vCV2.create({
-        //use update incase the above codeblock is uncommented
+      const newCred = await this.prisma.verifiableCredentials.create({
         data: {
           id: credInReq.id,
-          // seqid: seqID.for_next_credential,
           type: credInReq.type,
-          issuer: credInReq.issuer as string,
+          issuer: credInReq.issuer as IssuerType as string,
           issuanceDate: credInReq.issuanceDate,
           expirationDate: credInReq.expirationDate,
-          subject: credInReq.credentialSubject as any,
-          subjectId: (credInReq.credentialSubject as any).id,
-          proof: credInReq.proof as any,
+          subject: credInReq.credentialSubject as JwtCredentialSubject,
+          subjectId: (credInReq.credentialSubject as JwtCredentialSubject).id,
+          proof: credInReq.proof as Proof,
           credential_schema: issueRequest.credentialSchemaId, //because they can't refer to the schema db from here through an ID
           signed: credInReq as object,
           tags: issueRequest.tags,
         },
       });
-
-      //update counter only when credential has been created successfully
-      // await this.prisma.counter.update({
-      //   where: { id: seqID.id },
-      //   data: { for_next_credential: seqID.for_next_credential + 1 },
-      // });
 
       const res = newCred.signed;
       delete res['options'];
@@ -285,16 +211,17 @@ export class CredentialsService {
         updatedAt: newCred.updated_at,
         createdBy: '',
         updatedBy: '',
-        tags: newCred.tags, // TODO: add support for tags
+        tags: newCred.tags,
       };
     } catch (err) {
+      console.log('err: ', err);
       throw new InternalServerErrorException(err);
     }
   }
 
   async deleteCredential(id: string) {
     try {
-      const credential = await this.prisma.vCV2.update({
+      const credential = await this.prisma.verifiableCredentials.update({
         where: { id: id },
         data: {
           status: 'REVOKED',
@@ -310,32 +237,19 @@ export class CredentialsService {
     getCreds: GetCredentialsBySubjectOrIssuer,
   ) {
     try {
-      // console.log('subject: ', getCreds.subject);
-      // console.log('issuer: ', getCreds.issuer);
-      // console.log('subjectId: ', getCreds.subjectId);
-      // console.log('filter: ', getCreds.subject);
       const filteringSubject = getCreds.subject;
 
-      // const stringifiedSubject = JSON.stringify(getCreds.subject);
-      const credentials = await this.prisma.vCV2.findMany({
+      const credentials = await this.prisma.verifiableCredentials.findMany({
         where: {
           issuer: getCreds.issuer?.id,
           AND: filteringSubject
-            ? Object.keys(filteringSubject).map((key) => ({
+            ? Object.keys(filteringSubject).map((key: string) => ({
               subject: {
                 path: [key.toString()],
                 equals: filteringSubject[key],
               },
             }))
             : [],
-          // subject: JSON.stringify(getCreds.subject),
-          // issuer: getCreds.issuer?.id,
-          // subjectId: getCreds.subject?.id,
-          // subject: {
-          // contains: stringifiedSubject
-          // ? stringifiedSubject.substring(1, stringifiedSubject.length - 2)
-          // : '',
-          // },
         },
         select: {
           id: true,
@@ -345,11 +259,12 @@ export class CredentialsService {
 
       if (credentials.length == 0)
         throw new NotFoundException(
-          'No credentials found for the given subject or issuer',
+          'No credentials found for the given filters',
         );
 
       return credentials.map((cred) => {
-        const signed: { [k: string]: any } = cred.signed as any;
+        const signed: W3CCredential = cred.signed as W3CCredential;
+        // formatting the output as per the spec
         delete signed['id'];
         delete signed['options'];
         delete signed['proof'];
@@ -363,7 +278,7 @@ export class CredentialsService {
   async renderCredential(renderingRequest: RenderTemplateDTO) {
     const output = renderingRequest.output;
     const rendering_template = renderingRequest.template;
-    const credential = renderingRequest.credential;
+    const credential = renderingRequest.credential as W3CCredential;
     const subject = credential.credentialSubject as any;
     subject.qr = await this.renderAsQR(credential);
     console.log(subject);
@@ -380,7 +295,6 @@ export class CredentialsService {
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.PDF:
-        // return new StreamableFile(
         return wkhtmltopdf(data, {
           pageSize: 'A4',
           disableExternalLinks: true,
@@ -388,14 +302,11 @@ export class CredentialsService {
           disableJavascript: true,
           encoding: 'UTF-8',
         });
-      // );
 
       case RENDER_OUTPUT.QR_LINK:
         return data;
-        break;
       case RENDER_OUTPUT.HTML:
         return data;
-        break;
       case RENDER_OUTPUT.STRING:
         break;
       case RENDER_OUTPUT.JSON:
@@ -404,15 +315,8 @@ export class CredentialsService {
   }
 
   // UTILITY FUNCTIONS
-  async renderAsQR(cred: VCV2): Promise<any> {
-    // const credential = await this.prisma.vCV2.findUnique({
-    //   where: { id: credentialId },
-    // });
-
+  async renderAsQR(cred: W3CCredential) {
     try {
-      // const QRData = await QRCode.toDataURL(
-      //   (credential.signed as Verifiable<W3CCredential>).proof.proofValue,
-      // );
       const verificationURL = `http://64.227.185.154:3002/credentials/${cred.id}/verify`;
       const QRData = await QRCode.toDataURL(verificationURL);
       return QRData;
@@ -424,7 +328,7 @@ export class CredentialsService {
 
   async getSchemaByCredId(credId: string) {
     try {
-      const schema = await this.prisma.vCV2.findUnique({
+      const schema = await this.prisma.verifiableCredentials.findUnique({
         where: {
           id: credId,
         },
