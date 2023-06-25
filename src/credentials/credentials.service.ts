@@ -165,7 +165,7 @@ export class CredentialsService {
                   },
                 },
               ],
-              method: 'C4GT',
+              method: (credInReq && credInReq.id && (credInReq.id as string).trim() !== '') ? credInReq.id : 'rcw'
             },
           ],
         },
