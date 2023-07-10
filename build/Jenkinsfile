@@ -35,10 +35,19 @@ node() {
             '''
         }
     }
-    
-    stage('Start deploy job with latest tag') {
-         if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') { 
+   stage('Start deploy job with latest tag') {
+    if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
+        parallel(
+            "prod-deploy": {
                 build job: 'ULP/deploy-staging/credential-ms/', parameters: [string(name: 'tag', value: 'latest')]
-         }
+            },
+            "dev-deploy": {
+                build job: 'SBRC-deploy/deploy-services/deploy-staging/credential-ms/', parameters: [string(name: 'tag', value: 'latest')]
+            },
+            "uat-deploy": {
+                build job: 'UAT/deploy-uat/credential-ms/', parameters: [string(name: 'tag', value: 'latest')]
+            }
+        )
     }
-}
+} 
+   }
