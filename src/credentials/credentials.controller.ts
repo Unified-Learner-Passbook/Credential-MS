@@ -7,48 +7,104 @@ import {
   Param,
   Post,
   Res,
-  StreamableFile,
+  BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { CredentialsService } from './credentials.service';
 import { GetCredentialsBySubjectOrIssuer } from './dto/getCredentialsBySubjectOrIssuer.dto';
 import { IssueCredentialDTO } from './dto/issue-credential.dto';
 import { RenderTemplateDTO } from './dto/renderTemplate.dto';
 import { RENDER_OUTPUT } from './enums/renderOutput.enum';
-import { UpdateStatusDTO } from './dto/update-status.dto';
-import { DeriveCredentialDTO } from './dto/derive-credential.dto';
-import { VerifyCredentialDTO } from './dto/verify-credential.dto';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { ApiBody, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { string } from 'zod';
+import { Credential } from 'src/app.interface';
+import { GetCredentialsByTagsResponseDTO } from './dto/getCredentialsByTags.dto';
+import { GetCredentialByIdResponseDTO } from './dto/getCredentialById.dto';
 
 @Controller('credentials')
 export class CredentialsController {
   constructor(private readonly credentialsService: CredentialsService) {}
 
+  @ApiTags('Issuing')
+  @ApiQuery({
+    name: 'tags',
+    description: 'A comma separated string of tags to filter by',
+    type: string,
+  })
+  @ApiResponse({
+    type: GetCredentialsByTagsResponseDTO,
+    status: 200,
+    description: 'Successful operation',
+  })
   @Get()
-  getCredentials(@Query('tags') tags: string) {
-    // console.log('tags:', tags);
-    return this.credentialsService.getCredentials(tags.split(','));
+  getCredentials(
+    @Query('tags') tags: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string
+  ) {
+    return this.credentialsService.getCredentials(
+      tags.split(','),
+      isNaN(parseInt(page)) ? 1 : parseInt(page),
+      isNaN(parseInt(limit)) ? 10 : parseInt(limit)
+    );
   }
 
   @Post('/search')
-  getCredentialsBySubject(@Body() getCreds: GetCredentialsBySubjectOrIssuer) {
-    return this.credentialsService.getCredentialsBySubjectOrIssuer(getCreds);
+  getCredentialsBySubject(
+    @Body() getCreds: GetCredentialsBySubjectOrIssuer,
+    @Query('page') page: string,
+    @Query('limit') limit: string
+  ) {
+    return this.credentialsService.getCredentialsBySubjectOrIssuer(
+      getCreds,
+      isNaN(parseInt(page)) ? 1 : parseInt(page),
+      isNaN(parseInt(limit)) ? 10 : parseInt(limit)
+    );
   }
 
   @Get(':id')
-  getCredentialById(@Param() id: { id: string }) {
-    // console.log('id in getByIdController: ', id);
-    return this.credentialsService.getCredentialById(id?.id);
+  @ApiResponse({
+    type: GetCredentialByIdResponseDTO,
+    description: 'Returns a credential with the given id',
+  })
+  getCredentialById(@Param('id') id: string, @Req() req: Request) {
+    const accept: string = req.headers['accept']?.trim() || 'application/json';
+    const templateId: string = req.headers['templateid'] as string;
+
+    if (!templateId && accept !== 'application/json')
+      throw new BadRequestException('Template id is required');
+    else if (!templateId && accept === 'application/json')
+      return this.credentialsService.getCredentialById(
+        id,
+        templateId,
+        RENDER_OUTPUT.JSON
+      );
+
+    let output = RENDER_OUTPUT.JSON;
+    switch (accept) {
+      case 'application/json':
+        output = RENDER_OUTPUT.JSON;
+        break;
+      case 'application/pdf':
+        output = RENDER_OUTPUT.PDF;
+        break;
+      case 'text/html':
+        output = RENDER_OUTPUT.HTML;
+        break;
+      case 'text/plain':
+        output = RENDER_OUTPUT.STRING;
+        break;
+      case 'image/svg+xml':
+        output = RENDER_OUTPUT.QR;
+    }
+    return this.credentialsService.getCredentialById(id, templateId, output);
   }
 
   @Post('issue')
   issueCredentials(@Body() issueRequest: IssueCredentialDTO) {
     return this.credentialsService.issueCredential(issueRequest);
   }
-
-  // @Post('status')
-  // updateCredential(@Body() updateRequest: UpdateStatusDTO) {
-  //   return this.credentialsService.updateCredential(updateRequest);
-  // }
 
   @Delete(':id')
   delteCredential(@Param('id') id: string) {
@@ -57,39 +113,7 @@ export class CredentialsController {
 
   @Get(':id/verify')
   verifyCredential(@Param('id') credId: string) {
-    // console.log('credId: ', credId);
     return this.credentialsService.verifyCredential(credId);
   }
 
-  // @Post('derive')
-  // deriveCredential(@Body() deriveRequest: DeriveCredentialDTO) {
-  //   return this.credentialsService.deriveCredential(deriveRequest);
-  // }
-
-  @Post('render')
-  async renderTemplate(
-    @Body() renderRequest: RenderTemplateDTO,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    let contentType = 'text/html';
-    switch (renderRequest.output) {
-      case RENDER_OUTPUT.PDF:
-        contentType = 'application/pdf';
-        break;
-      case RENDER_OUTPUT.HTML:
-        contentType = 'text/html';
-        break;
-    }
-    response.header('Content-Type', contentType);
-    //response.contentType('appplication/pdf');
-    // const res = console.log('res: ', res);
-    // response.send(res);
-    return await this.credentialsService.renderCredential(renderRequest);
-  }
-
-  // TODO: Remove later and merge into cred-schema-ms
-  @Get('schema/:id')
-  async getSchemaByCredId(@Param('id') id: string) {
-    return this.credentialsService.getSchemaByCredId(id);
-  }
 }

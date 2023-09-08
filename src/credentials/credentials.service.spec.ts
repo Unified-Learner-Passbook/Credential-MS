@@ -1,300 +1,80 @@
-import { HttpModule } from '@nestjs/axios';
+import { HttpModule, HttpService } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma.service';
 import { CredentialsService } from './credentials.service';
 import Ajv2019 from 'ajv/dist/2019';
-import { z } from 'zod';
-import { StreamableFile } from '@nestjs/common';
+import { UnsignedVCValidator, VCValidator } from './types/validators/index';
+import { SchemaUtilsSerivce } from './utils/schema.utils.service';
+import { IdentityUtilsService } from './utils/identity.utils.service';
+import { RenderingUtilsService } from './utils/rendering.utils.service';
+import { PrismaClient } from '@prisma/client';
+import {
+  generateCredentialRequestPayload,
+  generateCredentialSchemaTestBody,
+  getCredentialByIdSchema,
+  issueCredentialReturnTypeSchema,
+  generateRenderingTemplatePayload,
+} from './credentials.fixtures';
+import { RENDER_OUTPUT } from './enums/renderOutput.enum';
 
 // setup ajv
-const ajv = new Ajv2019();
+const ajv = new Ajv2019({ strictTuples: false });
 ajv.addFormat('custom-date-time', function (dateTimeString) {
   return typeof dateTimeString === typeof new Date();
 });
 
-// setup zod types
-const ContextValidator = z.array(z.string().or(z.record(z.any())));
-export const ImageValidator = z.string().or(
-  z.object({
-    id: z.string(),
-    type: z.string(),
-    caption: z.string().optional(),
-  }),
-);
-export const GeoCoordinatesValidator = z.object({
-  type: z.string().min(1).or(z.string().array().nonempty()),
-  latitude: z.number(),
-  longitude: z.number(),
-});
-export const AddressValidator = z.object({
-  type: z.string().min(1).or(z.string().array().nonempty()),
-  addressCountry: z.string().optional(),
-  addressCountryCode: z.string().optional(),
-  addressRegion: z.string().optional(),
-  addressLocality: z.string().optional(),
-  streetAddress: z.string().optional(),
-  postOfficeBoxNumber: z.string().optional(),
-  postalCode: z.string().optional(),
-  geo: GeoCoordinatesValidator.optional(),
-});
-export const IdentifierTypeValidator = z
-  .enum([
-    'sourcedId',
-    'systemId',
-    'productId',
-    'userName',
-    'accountId',
-    'emailAddress',
-    'nationalIdentityNumber',
-    'isbn',
-    'issn',
-    'lisSourcedId',
-    'oneRosterSourcedId',
-    'sisSourcedId',
-    'ltiContextId',
-    'ltiDeploymentId',
-    'ltiToolId',
-    'ltiPlatformId',
-    'ltiUserId',
-    'identifier',
-  ])
-  .or(z.string());
-export const IdentifierEntryValidator = z.object({
-  type: z.string().min(1).or(z.string().array().nonempty()),
-  identifier: z.string(),
-  identifierType: IdentifierTypeValidator,
-});
-const ProfileValidator = z.string().or(
-  z
-    .object({
-      id: z.string().optional(),
-      type: z.string().or(z.string().array().nonempty().optional()),
-      name: z.string().optional(),
-      url: z.string().optional(),
-      phone: z.string().optional(),
-      description: z.string().optional(),
-      endorsement: z.any().array().optional(), // Recursive type
-      image: ImageValidator.optional(),
-      email: z.string().email().optional(),
-      address: AddressValidator.optional(),
-      otherIdentifier: IdentifierEntryValidator.array().optional(),
-      official: z.string().optional(),
-      parentOrg: z.any().optional(), // Recursive types are annoying =(
-      familyName: z.string().optional(),
-      givenName: z.string().optional(),
-      additionalName: z.string().optional(),
-      patronymicName: z.string().optional(),
-      honorificPrefix: z.string().optional(),
-      honorificSuffix: z.string().optional(),
-      familyNamePrefix: z.string().optional(),
-      dateOfBirth: z.string().optional(),
-    })
-    .catchall(z.any()),
-);
-export const CredentialSubjectValidator = z
-  .object({ id: z.string().optional() })
-  .catchall(z.any());
-export const CredentialStatusValidator = z.object({
-  type: z.string(),
-  id: z.string(),
-});
-export const CredentialSchemaValidator = z.object({
-  id: z.string(),
-  type: z.string(),
-});
-export const RefreshServiceValidator = z
-  .object({ id: z.string(), type: z.string() })
-  .catchall(z.any());
-export const UnsignedVCValidator = z
-  .object({
-    '@context': ContextValidator,
-    id: z.string().optional(),
-    type: z.string().array().nonempty(),
-    issuer: ProfileValidator,
-    issuanceDate: z.string(),
-    expirationDate: z.string().optional(),
-    credentialSubject: CredentialSubjectValidator.or(
-      CredentialSubjectValidator.array(),
-    ),
-    credentialStatus: CredentialStatusValidator.optional(),
-    credentialSchema: CredentialSchemaValidator.array().optional(),
-    refreshService: RefreshServiceValidator.optional(),
-  })
-  .catchall(z.any());
-export const ProofValidator = z
-  .object({
-    type: z.string(),
-    created: z.string(),
-    challenge: z.string().optional(),
-    domain: z.string().optional(),
-    nonce: z.string().optional(),
-    proofPurpose: z.string(),
-    verificationMethod: z.string(),
-    jws: z.string().optional(),
-  })
-  .catchall(z.any());
-export const VCValidator = UnsignedVCValidator.extend({
-  proof: ProofValidator.or(ProofValidator.array()),
-});
 describe('CredentialsService', () => {
   let service: CredentialsService;
-  const sampleCredReqPayload: any = {
-    credential: {
-      '@context': [
-        'https://www.w3.org/2018/credentials/v1',
-        'https://www.w3.org/2018/credentials/examples/v1',
-      ],
-      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-      issuer: 'did:ulp:705a7f13-da2e-4305-a1ca-ac8e750e9ada',
-      issuanceDate: '2023-02-06T11:56:27.259Z',
-      expirationDate: '2023-02-08T11:56:27.259Z',
-      credentialSubject: {
-        id: 'did:ulp:b4a191af-d86e-453c-9d0e-dd4771067235',
-        grade: '9.23',
-        programme: 'B.Tech',
-        certifyingInstitute: 'IIIT Sonepat',
-        evaluatingInstitute: 'NIT Kurukshetra',
-      },
-    },
-    credentialSchemaId: 'did:ulpschema:c9cc0f03-4f94-4f44-9bcd-b24a86596fa2',
-    tags: ['tag1', 'tag2', 'tag3'],
-  };
-
-  const issueCredentialReturnTypeSchema = {
-    type: 'object',
-    properties: {
-      credential: {
-        type: 'object',
-        properties: {
-          '@context': {
-            type: 'array',
-            items: [{ type: 'string' }],
-          },
-          id: {
-            type: 'string',
-          },
-          type: {
-            type: 'array',
-            items: [{ type: 'string' }],
-          },
-          proof: {
-            type: 'object',
-            properties: {
-              type: { type: 'string' },
-              created: { type: 'string' },
-              proofValue: { type: 'string' },
-              proofPurpose: { type: 'string' },
-              verificationMethod: { type: 'string' },
-            },
-          },
-          issuer: { type: 'string' },
-          issuanceDate: { type: 'string' },
-          expirationDate: { type: 'string' },
-          credentialSubject: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              grade: { type: 'string' },
-              programme: { type: 'string' },
-              certifyingInstitute: { type: 'string' },
-              evaluatingInstitute: { type: 'string' },
-            },
-            required: [
-              'id',
-              'grade',
-              'programme',
-              'certifyingInstitute',
-              'evaluatingInstitute',
-            ],
-          },
-        },
-        required: [
-          '@context',
-          'id',
-          'issuer',
-          'expirationDate',
-          'credentialSubject',
-          'issuanceDate',
-          'type',
-          'proof',
-        ],
-      },
-      credentialSchemaId: { type: 'string' },
-      createdAt: { type: 'object', format: 'custom-date-time' },
-      updatedAt: { type: 'object', format: 'custom-date-time' },
-      createdBy: { type: 'string' },
-      updatedBy: { type: 'string' },
-      tags: {
-        type: 'array',
-        items: [{ type: 'string' }],
-      },
-    },
-    required: [
-      'credential',
-      'credentialSchemaId',
-      'tags',
-      'createdAt',
-      'updatedAt',
-      'createdBy',
-      'updatedBy',
-    ],
-    additionalProperties: false,
-  };
-
-  const getCredentialByIdSchema = {
-    type: 'object',
-    properties: {
-      '@context': {
-        type: 'array',
-        items: [{ type: 'string' }],
-      },
-      id: { type: 'string' },
-      type: {
-        type: 'array',
-        items: [{ type: 'string' }],
-      },
-      issuer: { type: 'string' },
-      issuanceDate: { type: 'string' },
-      expirationDate: { type: 'string' },
-      credentialSubject: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          grade: { type: 'string' },
-          programme: { type: 'string' },
-          certifyingInstitute: { type: 'string' },
-          evaluatingInstitute: { type: 'string' },
-        },
-        required: [
-          'id',
-          'grade',
-          'programme',
-          'certifyingInstitute',
-          'evaluatingInstitute',
-        ],
-      },
-    },
-    required: [
-      '@context',
-      'id',
-      'issuer',
-      'expirationDate',
-      'credentialSubject',
-      'issuanceDate',
-      'type',
-    ],
-  };
+  let httpSerivce: HttpService;
+  let identityUtilsService: IdentityUtilsService;
 
   const validate = ajv.compile(issueCredentialReturnTypeSchema);
   const getCredReqValidate = ajv.compile(getCredentialByIdSchema);
 
+  let issuerDID;
+  let subjectDID;
+  let credentialSchemaID;
+  let sampleCredReqPayload;
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [HttpModule],
-      providers: [CredentialsService, PrismaService],
+      providers: [
+        CredentialsService,
+        PrismaClient,
+        RenderingUtilsService,
+        SchemaUtilsSerivce,
+        IdentityUtilsService,
+      ],
     }).compile();
 
     service = module.get<CredentialsService>(CredentialsService);
+    httpSerivce = module.get<HttpService>(HttpService);
+    identityUtilsService =
+      module.get<IdentityUtilsService>(IdentityUtilsService);
+
+    issuerDID = await identityUtilsService.generateDID([
+      'VerifiableCredentialTESTINGIssuer',
+    ]);
+    issuerDID = issuerDID[0].id;
+
+    subjectDID = await identityUtilsService.generateDID([
+      'VerifiableCredentialTESTINGIssuer',
+    ]);
+    subjectDID = subjectDID[0].id;
+
+    const schemaPayload = generateCredentialSchemaTestBody();
+    schemaPayload.schema.author = issuerDID;
+    const schema = await httpSerivce.axiosRef.post(
+      `${process.env.SCHEMA_BASE_URL}/credential-schema`,
+      schemaPayload
+    );
+    credentialSchemaID = schema.data.schema.id;
+    sampleCredReqPayload = generateCredentialRequestPayload(
+      issuerDID,
+      subjectDID,
+      credentialSchemaID,
+      schema.data.schema.version
+    );
   });
 
   it('service should be defined', () => {
@@ -304,35 +84,48 @@ describe('CredentialsService', () => {
   it('should issue a credential', async () => {
     const newCred = await service.issueCredential(sampleCredReqPayload);
     VCValidator.parse(newCred.credential);
-    expect(validate(newCred)).toBe(true); // toHaveProperty('credential');
+    expect(validate(newCred)).toBe(true);
   });
 
-  it('should get a credential', async () => {
+  it('should get a credential in JSON', async () => {
     const newCred: any = await service.issueCredential(sampleCredReqPayload);
     const cred = await service.getCredentialById(newCred.credential?.id);
     UnsignedVCValidator.parse(cred);
     expect(getCredReqValidate(cred)).toBe(true);
   });
 
-  it('should verify a credential', async () => {
+  it('should get a credential in QR', async () => {
     const newCred: any = await service.issueCredential(sampleCredReqPayload);
-    const verifyCred = await service.verifyCredential(newCred.credential?.id);
-    expect(verifyCred).toEqual({
-      status: 'ISSUED',
-      checks: [
-        {
-          active: 'OK',
-          revoked: 'OK',
-          expired: 'NOK',
-          proof: 'OK',
-        },
-      ],
-    });
+    const dataURL = await service.getCredentialById(newCred.credential?.id, null, RENDER_OUTPUT.QR);
+    expect(dataURL).toBeDefined(); // Assert that the dataURL is defined
+    expect(dataURL).toContain('data:image/png;base64,');
   });
 
-  // it('should revoke a credential', async () => {
-  //   expect(await service.getCredentials(['tag1'])).toBeInstanceOf(Array);
-  // });
+
+  it('should get a credential in HTML', async () => {
+    const newCred: any = await service.issueCredential(sampleCredReqPayload);
+    const templatePayload = generateRenderingTemplatePayload(newCred.credentialSchemaId, "1.0.0")
+    const template = await httpSerivce.axiosRef.post(`${process.env.SCHEMA_BASE_URL}/template`, templatePayload);
+    const cred = await service.getCredentialById(newCred.credential?.id, template.data.template.templateId, RENDER_OUTPUT.HTML);
+    expect(cred).toContain('</html>')
+    expect(cred).toContain('IIIT Sonepat, NIT Kurukshetra')
+    expect(cred).toBeDefined()
+  });
+
+  it('should get a credential in PDF', async () => {
+    const newCred: any = await service.issueCredential(sampleCredReqPayload);
+    const templatePayload = generateRenderingTemplatePayload(newCred.credentialSchemaId, "1.0.0")
+    const template = await httpSerivce.axiosRef.post(`${process.env.SCHEMA_BASE_URL}/template`, templatePayload);
+    const cred = await service.getCredentialById(newCred.credential?.id, template.data.template.templateId, RENDER_OUTPUT.PDF);
+    expect(cred).toBeDefined()
+  });
+
+
+  it('should get a credential in STRING', async () => {
+    const newCred: any = await service.issueCredential(sampleCredReqPayload);
+    const cred = await service.getCredentialById(newCred.credential?.id, null, RENDER_OUTPUT.STRING);
+    expect(cred).toBeDefined()
+  });
 
   it('should throw because no credential is present to be searched by ID', async () => {
     await expect(service.getCredentialById('did:ulp:123')).rejects.toThrow();
@@ -342,10 +135,17 @@ describe('CredentialsService', () => {
     await expect(service.verifyCredential('did:ulp:123')).rejects.toThrow();
   });
 
+  it('should verify an issued credential', async () => {
+    const newCred = await service.issueCredential(sampleCredReqPayload);
+    const res = {checks: [{active: "OK", expired: "NOK", proof: "OK", revoked: "OK"}], status: "ISSUED"}
+    const verifyRes = await service.verifyCredential(newCred.credential['id']);
+    expect(verifyRes).toEqual(res);
+  });
+
   it('should say revoked', async () => {
     const newCred = await service.issueCredential(sampleCredReqPayload);
     expect(
-      await service.deleteCredential((newCred.credential as any).id),
+      await service.deleteCredential((newCred.credential as any).id)
     ).toHaveProperty('status', 'REVOKED');
   });
 
@@ -357,39 +157,28 @@ describe('CredentialsService', () => {
     await expect(
       service.getCredentialsBySubjectOrIssuer({
         subject: { id: 'did:ulp:123' },
-      }),
+      })
     ).rejects.toThrow();
   });
 
   it('should return array of creds based on issuer', async () => {
-    try {
       const newCred = await service.issueCredential(sampleCredReqPayload);
-      console.log('newCred: ', (newCred.credential as any)?.issuer);
       expect(
         await service.getCredentialsBySubjectOrIssuer({
           issuer: {
             id: (newCred.credential as any)?.issuer,
           },
-        }),
+        })
       ).toBeInstanceOf(Array);
-    } catch (e) {
-      expect(e.message).toBe(
-        'No credentials found for the given subject or issuer',
-      );
-    }
   });
 
-  // it('should show a stremable file', async () => {
-  //   const newCred = await service.issueCredential(sampleCredReqPayload);
-  //   const renderReq = {
-  //     ...newCred,
-  //     template:
-  //       '<html lang=\'en\'>   <head>     <meta charset=\'UTF-8\' />     <meta http-equiv=\'X-UA-Compatible\' content=\'IE=edge\' />     <meta name=\'viewport\' content=\'width=device-width, initial-scale=1.0\' />     <title>Certificate</title>   </head>   <body>   <div style="width:800px; height:600px; padding:20px; text-align:center; border: 10px solid #787878"> <div style="width:750px; height:550px; padding:20px; text-align:center; border: 5px solid #787878"> <span style="font-size:50px; font-weight:bold">Certificate of Completion</span> <br><br> <span style="font-size:25px"><i>This is to certify that</i></span> <br><br> <span style="font-size:30px"><b>{{name}}</b></span><br/><br/> <span style="font-size:25px"><i>has completed the course</i></span> <br/><br/> <span style="font-size:30px">{{programme}}</span> <br/><br/> <span style="font-size:20px">with score of <b>{{grade}}%</b></span> <br/><br/><br/><br/> <span style="font-size:25px"></span><br> </div> </div>  </body>    </html>',
-  //     output: 'PDF',
-  //     schema: {},
-  //   };
-  //   expect(service.renderCredential(renderReq as any)).toBeInstanceOf(
-  //     StreamableFile,
-  //   );
-  // });
+
+  it('should return array of creds based on issuer', async () => {
+    const newCred = await service.issueCredential(sampleCredReqPayload);
+    expect(
+      await service.getCredentials(['tag1'])
+    ).toBeInstanceOf(Array);
+      const res = await service.getCredentials(['tag1'], 2, 1000)
+      expect(res.length).toEqual(0)
+});
 });
