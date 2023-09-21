@@ -1,34 +1,46 @@
 version: '3'
 
 services:
-  shortdb:
-    container_name: shortdb
+  db:
     image: postgres:12
-    env_file:
-      - .env
     environment:
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-    ports:
-      - 5432:5432
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
     volumes:
-      - ./scripts/1-init.sql:/docker-entrypoint-initdb.d/1-init.sql
-      - ./pgdata:/var/lib/postgresql/data
-
-  gql:
-    image: hasura/graphql-engine:v2.7.0
-    ports:
-      - 15003:8080
-    env_file:
-      - .env
-    environment:
-      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@shortdb:5432/${POSTGRES_DB}
-      HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@shortdb:5432/${POSTGRES_DB}
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
-      HASURA_GRAPHQL_DEV_MODE: "true"
-      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
+      - data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  credentials-service:
+    image: cred
+    build: .
     depends_on:
-      - shortdb
-    restart: always
+      db:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      IDENTITY_BASE_URL: 
+      SCHEMA_BASE_URL: 
+      ENABLE_AUTH: "false"
+      JWKS_URI: ""
+      SIGNING_ALGORITHM: "RS256"
+    healthcheck:
+      test:
+        [ "CMD-SHELL", "curl -f http://localhost:3000/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      rcw-test:
+      default:
+
+networks:
+  rcw-test:
+    external: true
+
+volumes:
+  data:

@@ -1,15 +1,19 @@
+![Tests](https://github.com/SamagraX-RCW/credential/actions/workflows/ci.yml/badge.svg)
+
 # Credential Microservice
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) based  CRUD APIs to, claim, sign and generate shareable verifiable credentials. This repository is intended to be used with the [Unified Learner's Passbook](http://github.com/Unified-Learners-Passbook) project in the state of Uttar Pradesh, India.
+[Nest](https://github.com/nestjs/nest) based CRUD APIs to, claim, sign and generate shareable verifiable credentials. This repository is intended to be used with the [Unified Learner's Passbook](http://github.com/Unified-Learners-Passbook) project in the state of Uttar Pradesh, India.
 
 ## Installation
 
 ```bash
 $ npm install
 ```
+
 OR
+
 ```bash
 $ npx yarn
 ```
@@ -40,7 +44,6 @@ $ npx yarn run start:dev
 $ npx yarn run start:prod
 ```
 
-
 ## Test
 
 ```bash
@@ -65,6 +68,16 @@ $ npx yarn run test:e2e
 
 # test coverage
 $ npx yarn run test:cov
+```
+
+OR
+
+```
+# Run tests in container from services/credential-service folder
+$ make test
+
+# Run tests in container from base folder
+$ make -C services/credentials-service test
 ```
 
 ## Stay in touch

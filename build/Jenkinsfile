@@ -1,9 +1,9 @@
 node() {
-    withCredentials([string(credentialsId: 'docker_server', variable: 'docker_server')]) {
+    withCredentials([string(credentialsId: 'docker_registry', variable: 'docker_registry')]) {
         properties([
             parameters([
-                string(name: 'docker_repo', defaultValue: 'samagragovernance/credential-ms', description: 'Docker Image Name'),
-                string(name: 'docker_server', defaultValue: "$docker_server", description: 'Docker Registry URL'),                
+                string(name: 'docker_repo', defaultValue: 'samagrax-rcw/credential', description: 'Docker Image Name'),
+                string(name: 'docker_registry', defaultValue: "$docker_registry", description: 'Docker Registry URL'),                
             ])
         ])
     }
@@ -16,38 +16,29 @@ node() {
 
     stage('docker-build') {
         sh '''
-        docker build -f Dockerfile -t $docker_server/$docker_repo:$commit_id .
+        docker build -f Dockerfile -t $docker_registry/$docker_repo:$commit_id .
         '''
         if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
             sh '''
-            docker build -f Dockerfile -t $docker_server/$docker_repo:latest .
+            docker build -f Dockerfile -t $docker_registry/$docker_repo:latest .
             '''
         }
     }
 
     stage('docker-push') {
         sh '''
-        docker push $docker_server/$docker_repo:$commit_id
+        docker push $docker_registry/$docker_repo:$commit_id
         '''
         if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
             sh '''
-            docker push $docker_server/$docker_repo:latest
+            docker push $docker_registry/$docker_repo:latest
             '''
         }
     }
-   stage('Start deploy job with latest tag') {
-    if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
-        parallel(
-            "prod-deploy": {
-                build job: 'ULP/deploy-staging/credential-ms/', parameters: [string(name: 'tag', value: 'latest')]
-            },
-            "dev-deploy": {
-                build job: 'SBRC-deploy/deploy-services/deploy-staging/credential-ms/', parameters: [string(name: 'tag', value: 'latest')]
-            },
-            "uat-deploy": {
-                build job: 'UAT/deploy-uat/credential-ms/', parameters: [string(name: 'tag', value: 'latest')]
-            }
-        )
+    
+    stage('Start deploy job with latest tag') {
+         if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') { 
+                build job: 'RCW/deploy-staging/credential/', parameters: [string(name: 'tag', value: 'latest')]
+         }
     }
-} 
-   }
+}
